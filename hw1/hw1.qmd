@@ -113,7 +113,8 @@ sort |
 uniq |
 wc -l
 ```
-The same as the number of rows in the file. The number of unique patients in this data file is 
+the same as the number of rows in the file. 
+The number of unique patients in this data file is 
 ```{bash}
 zcat < ~/mimic/hosp/admissions.csv.gz |
 tail -n +2 |
@@ -133,6 +134,50 @@ wc -l
 ```
 
 6. What are the possible values taken by each of the variable `admission_type`, `admission_location`, `insurance`, and `ethnicity`? Also report the count for each unique value of these variables in decreasing order. (Hint: combine Linux commands `zcat`, `head`/`tail`, `awk`, `uniq -c`, `wc`, `sort`, and so on; skip the header line.)
+**Solution:** 
+```{bash}
+zcat ~/mimic/hosp/admissions.csv.gz | head -1
+```
+admission_type takes 6, admission_location takes 8, insurance takes 10, and ethnicity takes 13. 
+
+Regarding the count for each unique value of these variables
+For admission_type: 
+```{bash}
+zcat ~/mimic/hosp/admissions.csv.gz | 
+tail -n +2 | 
+awk -F',' '{print $6}' | 
+sort | 
+uniq |
+wc -l
+```
+For admission_location:
+```{bash}
+zcat ~/mimic/hosp/admissions.csv.gz | 
+tail -n +2 | 
+awk -F',' '{print $8}' | 
+sort | 
+uniq |
+wc -l
+```
+For insurance:
+```{bash}
+zcat ~/mimic/hosp/admissions.csv.gz | 
+tail -n +2 | 
+awk -F',' '{print $10}' | 
+sort | 
+uniq |
+wc -l
+```
+For ethnicity:
+```{bash}
+zcat ~/mimic/hosp/admissions.csv.gz | 
+tail -n +2 | 
+awk -F',' '{print $13}' | 
+sort | 
+uniq |
+wc -l
+```
+In decreasing order, the count of unique values are 33, 12, 9, 6.
 
 7. The `icusays.csv.gz` file contains all the ICU stays during the study period. How many ICU stays, identified by `stay_id`, are in this data file? How many unique patients, identified by `subject_id`, are in this data file?
 ```{bash}
