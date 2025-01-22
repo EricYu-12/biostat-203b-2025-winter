@@ -179,10 +179,27 @@ wc -l
 ```
 In decreasing order, the count of unique values are 33, 12, 9, 6.
 
-7. The `icusays.csv.gz` file contains all the ICU stays during the study period. How many ICU stays, identified by `stay_id`, are in this data file? How many unique patients, identified by `subject_id`, are in this data file?
+7. The `icustays.csv.gz` file contains all the ICU stays during the study period. How many ICU stays, identified by `stay_id`, are in this data file? How many unique patients, identified by `subject_id`, are in this data file?
 ```{bash}
-
+zcat ~/mimic/icu/icustays.csv.gz | head 
 ```
+Count ICU stays:
+```{bash}
+zcat ~/mimic/icu/icustays.csv.gz | 
+tail -n +2 | 
+awk -F',' '{print $3}' | 
+wc -l
+```
+Count unique patients:
+```{bash}
+zcat ~/mimic/icu/icustays.csv.gz | 
+tail -n +2 | 
+awk -F',' '{print $1}' | 
+sort | 
+uniq |
+wc -l
+```
+Therefore, There are 94458 ICU stays and 65366 unique patients.
 
 8. _To compress, or not to compress. That's the question._ Let's focus on the big data file `labevents.csv.gz`. Compare compressed gz file size to the uncompressed file size. Compare the run times of `zcat < ~/mimic/labevents.csv.gz | wc -l` versus `wc -l labevents.csv`. Discuss the trade off between storage and speed for big data files. (Hint: `gzip -dk < FILENAME.gz > ./FILENAME`. Remember to delete the large `labevents.csv` file after the exercise.)
 
