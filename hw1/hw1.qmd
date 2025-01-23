@@ -16,6 +16,7 @@ format:
 ---
 
 Display machine information for reproducibility:
+
 ```{r}
 #| eval: true
 sessionInfo()
@@ -25,15 +26,15 @@ sessionInfo()
 
 **No handwritten homework reports are accepted for this course.** We work with Git and GitHub. Efficient and abundant use of Git, e.g., frequent and well-documented commits, is an important criterion for grading your homework.
 
-1. Apply for the [Student Developer Pack](https://education.github.com/pack) at GitHub using your UCLA email. You'll get GitHub Pro account for free (unlimited public and private repositories).
+1.  Apply for the [Student Developer Pack](https://education.github.com/pack) at GitHub using your UCLA email. You'll get GitHub Pro account for free (unlimited public and private repositories).
 
-2. Create a **private** repository `biostat-203b-2025-winter` and add `Hua-Zhou` and TA team (`Tomoki-Okuno` for Lec 1; `parsajamshidian` and `BowenZhang2001` for Lec 82) as your collaborators with write permission.
+2.  Create a **private** repository `biostat-203b-2025-winter` and add `Hua-Zhou` and TA team (`Tomoki-Okuno` for Lec 1; `parsajamshidian` and `BowenZhang2001` for Lec 82) as your collaborators with write permission.
 
-3. Top directories of the repository should be `hw1`, `hw2`, ... Maintain two branches `main` and `develop`. The `develop` branch will be your main playground, the place where you develop solution (code) to homework problems and write up report. The `main` branch will be your presentation area. Submit your homework files (Quarto file `qmd`, `html` file converted by Quarto, all code and extra data sets to reproduce results) in the `main` branch.
+3.  Top directories of the repository should be `hw1`, `hw2`, ... Maintain two branches `main` and `develop`. The `develop` branch will be your main playground, the place where you develop solution (code) to homework problems and write up report. The `main` branch will be your presentation area. Submit your homework files (Quarto file `qmd`, `html` file converted by Quarto, all code and extra data sets to reproduce results) in the `main` branch.
 
-4. After each homework due date, course reader and instructor will check out your `main` branch for grading. Tag each of your homework submissions with tag names `hw1`, `hw2`, ... Tagging time will be used as your submission time. That means if you tag your `hw1` submission after deadline, penalty points will be deducted for late submission.
+4.  After each homework due date, course reader and instructor will check out your `main` branch for grading. Tag each of your homework submissions with tag names `hw1`, `hw2`, ... Tagging time will be used as your submission time. That means if you tag your `hw1` submission after deadline, penalty points will be deducted for late submission.
 
-5. After this course, you can make this repository public and use it to demonstrate your skill sets on job market.
+5.  After this course, you can make this repository public and use it to demonstrate your skill sets on job market.
 
 **Solution** Done.
 
@@ -45,35 +46,42 @@ This exercise (and later in this course) uses the [MIMIC-IV data v3.1](https://p
 
 ## Q3. Linux Shell Commands
 
-1. Make the MIMIC-IV v3.1 data available at location `~/mimic`. The output of the `ls -l ~/mimic` command should be similar to the below (from my laptop).
+1.  Make the MIMIC-IV v3.1 data available at location `~/mimic`. The output of the `ls -l ~/mimic` command should be similar to the below (from my laptop).
+
 ```{bash}
 #| eval: true
 # content of mimic folder
 ls -l ~/mimic/
 ```
-Refer to the documentation <https://physionet.org/content/mimiciv/3.1/> for details of data files. Do **not** put these data files into Git; they are big. Do **not** copy them into your directory. Do **not** decompress the gz data files. These create unnecessary big files and are not big-data-friendly practices. Read from the data folder `~/mimic` directly in following exercises. 
 
-  Use Bash commands to answer following questions.
-  
+Refer to the documentation <https://physionet.org/content/mimiciv/3.1/> for details of data files. Do **not** put these data files into Git; they are big. Do **not** copy them into your directory. Do **not** decompress the gz data files. These create unnecessary big files and are not big-data-friendly practices. Read from the data folder `~/mimic` directly in following exercises.
+
+Use Bash commands to answer following questions.
+
 **Solution:** I have downloaded the MIMIC IV v3.1 data and it's available under `~/mimic` folder as requested.
 
-2. Display the contents in the folders `hosp` and `icu` using Bash command `ls -l`. Why are these data files distributed as `.csv.gz` files instead of `.csv` (comma separated values) files? Read the page <https://mimic.mit.edu/docs/iv/> to understand what's in each folder.
+2.  Display the contents in the folders `hosp` and `icu` using Bash command `ls -l`. Why are these data files distributed as `.csv.gz` files instead of `.csv` (comma separated values) files? Read the page <https://mimic.mit.edu/docs/iv/> to understand what's in each folder.
 
 **Solution:** Here is the content of `hosp` folder
+
 ```{bash}
 ls -l ~/mimic/hosp/
 ```
+
 and the content of the `icu` folder
+
 ```{bash}
 ls -l ~/mimic/icu/
 ```
+
 The .csv.gz files are compressed versions of .csv files. These data were distributed as `.csv.gz` file because the files are too large to be stored or downloaded. To ensure there are enough spaces to store and the users could downlad the dataset in faster speed, the data files are distributed as `.csv.gz` files instead of the `.csv`
 
-3. Briefly describe what Bash commands `zcat`, `zless`, `zmore`, and `zgrep` do.
+3.  Briefly describe what Bash commands `zcat`, `zless`, `zmore`, and `zgrep` do.
 
 **Solution:**For `zcat`, it reads and outputs the contents of a .gz file to the standard output; for `zless`, it opens a .gz file in a scrollable viewer and allows you to navigate the file's content without extracting the file; for `zmore`, it displays the content of a .gz file one screen at a time; for `zgrep`, it looks for specific patterns or keywords within a .gz file.
 
-4. (Looping in Bash) What's the output of the following bash script?
+4.  (Looping in Bash) What's the output of the following bash script?
+
 ```{bash}
 #| eval: false
 for datafile in ~/mimic/hosp/{a,l,pa}*.gz
@@ -81,9 +89,11 @@ do
   ls -l $datafile
 done
 ```
+
 **Solution:** The above is the output of the bash script.
 
 Display the number of lines in each data file using a similar loop. (Hint: combine linux commands `zcat <` and `wc -l`.)
+
 ```{bash}
 #| eval: false
 for datafile in ~/mimic/hosp/{a,l,pa}*.gz
@@ -92,19 +102,25 @@ do
   zcat "$datafile" | wc -l
 done
 ```
+
 **Solution:** The number of lines in admissions is 546029, the number of lines in labevents is 158374765, the number of lines in patients is 364628.
 
-5. Display the first few lines of `admissions.csv.gz`. How many rows are in this data file, excluding the header line? Each `hadm_id` identifies a hospitalization. How many hospitalizations are in this data file? How many unique patients (identified by `subject_id`) are in this data file? Do they match the number of patients listed in the `patients.csv.gz` file? (Hint: combine Linux commands `zcat <`, `head`/`tail`, `awk`, `sort`, `uniq`, `wc`, and so on.)
+5.  Display the first few lines of `admissions.csv.gz`. How many rows are in this data file, excluding the header line? Each `hadm_id` identifies a hospitalization. How many hospitalizations are in this data file? How many unique patients (identified by `subject_id`) are in this data file? Do they match the number of patients listed in the `patients.csv.gz` file? (Hint: combine Linux commands `zcat <`, `head`/`tail`, `awk`, `sort`, `uniq`, `wc`, and so on.)
 
 **Solution:** Here is the first few lines of `admissions.csv.gz`
+
 ```{bash}
 zcat < ~/mimic/hosp/admissions.csv.gz | head
 ```
+
 The number of rows in this data file, excluding the header line, is
+
 ```{bash}
 zcat < ~/mimic/hosp/admissions.csv.gz | tail -n +2 | wc -l
 ```
+
 The number of hospitalizations in this data file is
+
 ```{bash}
 zcat < ~/mimic/hosp/admissions.csv.gz | 
 tail -n +2 | 
@@ -113,8 +129,9 @@ sort |
 uniq |
 wc -l
 ```
-the same as the number of rows in the file. 
-The number of unique patients in this data file is 
+
+the same as the number of rows in the file. The number of unique patients in this data file is
+
 ```{bash}
 zcat < ~/mimic/hosp/admissions.csv.gz |
 tail -n +2 |
@@ -123,7 +140,9 @@ sort |
 uniq |
 wc -l
 ```
+
 which is less than the number of patients listed in the `patients.csv.gz` file
+
 ```{bash}
 zcat < ~/mimic/hosp/patients.csv.gz |
 tail -n +2 |
@@ -133,15 +152,16 @@ uniq |
 wc -l
 ```
 
-6. What are the possible values taken by each of the variable `admission_type`, `admission_location`, `insurance`, and `ethnicity`? Also report the count for each unique value of these variables in decreasing order. (Hint: combine Linux commands `zcat`, `head`/`tail`, `awk`, `uniq -c`, `wc`, `sort`, and so on; skip the header line.)
-**Solution:** 
+6.  What are the possible values taken by each of the variable `admission_type`, `admission_location`, `insurance`, and `ethnicity`? Also report the count for each unique value of these variables in decreasing order. (Hint: combine Linux commands `zcat`, `head`/`tail`, `awk`, `uniq -c`, `wc`, `sort`, and so on; skip the header line.) **Solution:**
+
 ```{bash}
 zcat ~/mimic/hosp/admissions.csv.gz | head -1
 ```
-admission_type takes 6, admission_location takes 8, insurance takes 10, and ethnicity takes 13. 
 
-Regarding the count for each unique value of these variables
-For admission_type: 
+admission_type takes 6, admission_location takes 8, insurance takes 10, and ethnicity takes 13.
+
+Regarding the count for each unique value of these variables For admission_type:
+
 ```{bash}
 zcat ~/mimic/hosp/admissions.csv.gz | 
 tail -n +2 | 
@@ -150,7 +170,9 @@ sort |
 uniq |
 wc -l
 ```
+
 For admission_location:
+
 ```{bash}
 zcat ~/mimic/hosp/admissions.csv.gz | 
 tail -n +2 | 
@@ -159,7 +181,9 @@ sort |
 uniq |
 wc -l
 ```
+
 For insurance:
+
 ```{bash}
 zcat ~/mimic/hosp/admissions.csv.gz | 
 tail -n +2 | 
@@ -168,7 +192,9 @@ sort |
 uniq |
 wc -l
 ```
+
 For ethnicity:
+
 ```{bash}
 zcat ~/mimic/hosp/admissions.csv.gz | 
 tail -n +2 | 
@@ -177,20 +203,26 @@ sort |
 uniq |
 wc -l
 ```
+
 In decreasing order, the count of unique values are 33, 12, 9, 6.
 
-7. The `icustays.csv.gz` file contains all the ICU stays during the study period. How many ICU stays, identified by `stay_id`, are in this data file? How many unique patients, identified by `subject_id`, are in this data file?
+7.  The `icustays.csv.gz` file contains all the ICU stays during the study period. How many ICU stays, identified by `stay_id`, are in this data file? How many unique patients, identified by `subject_id`, are in this data file?
+
 ```{bash}
 zcat ~/mimic/icu/icustays.csv.gz | head 
 ```
+
 Count ICU stays:
+
 ```{bash}
 zcat ~/mimic/icu/icustays.csv.gz | 
 tail -n +2 | 
 awk -F',' '{print $3}' | 
 wc -l
 ```
+
 Count unique patients:
+
 ```{bash}
 zcat ~/mimic/icu/icustays.csv.gz | 
 tail -n +2 | 
@@ -199,24 +231,28 @@ sort |
 uniq |
 wc -l
 ```
+
 Therefore, there are 94458 ICU stays and 65366 unique patients.
 
-8. _To compress, or not to compress. That's the question._ Let's focus on the big data file `labevents.csv.gz`. Compare compressed gz file size to the uncompressed file size. Compare the run times of `zcat < ~/mimic/labevents.csv.gz | wc -l` versus `wc -l labevents.csv`. Discuss the trade off between storage and speed for big data files. (Hint: `gzip -dk < FILENAME.gz > ./FILENAME`. Remember to delete the large `labevents.csv` file after the exercise.)
+8.  *To compress, or not to compress. That's the question.* Let's focus on the big data file `labevents.csv.gz`. Compare compressed gz file size to the uncompressed file size. Compare the run times of `zcat < ~/mimic/labevents.csv.gz | wc -l` versus `wc -l labevents.csv`. Discuss the trade off between storage and speed for big data files. (Hint: `gzip -dk < FILENAME.gz > ./FILENAME`. Remember to delete the large `labevents.csv` file after the exercise.)
 
-**Solution:** The size of the compressed gz file is 2.5G while that of the uncompressed file is 18G. The run time of `zcat < ~/mimic/labevents.csv.gz | wc -l` is 2minutes and 36.861 seconds while the run time of `wc -l labevents.csv` is 9minutes and 54.719 seconds. 
+**Solution:** The size of the compressed gz file is 2.5G while that of the uncompressed file is 18G. The run time of `zcat < ~/mimic/labevents.csv.gz | wc -l` is 2minutes and 36.861 seconds while the run time of `wc -l labevents.csv` is 9minutes and 54.719 seconds.
 
-Regarding trade offs between storage and speed for big data files, it is obcious that the compressed file takes up significantly less storage space than the uncompressed file, and the compressed file has significantly shorter run times than the uncompressed file due to smaller file size. In general, for large datasets, the compressed file takes up smaller storage space and shorter run time than the uncompressed file.   
+Regarding trade offs between storage and speed for big data files, it is obcious that the compressed file takes up significantly less storage space than the uncompressed file, and the compressed file has significantly shorter run times than the uncompressed file due to smaller file size. In general, for large datasets, the compressed file takes up smaller storage space and shorter run time than the uncompressed file.
 
 ## Q4. Who's popular in Price and Prejudice
 
-1. You and your friend just have finished reading *Pride and Prejudice* by Jane Austen. Among the four main characters in the book, Elizabeth, Jane, Lydia, and Darcy, your friend thinks that Darcy was the most mentioned. You, however, are certain it was Elizabeth. Obtain the full text of the novel from <http://www.gutenberg.org/cache/epub/42671/pg42671.txt> and save to your local folder. 
+1.  You and your friend just have finished reading *Pride and Prejudice* by Jane Austen. Among the four main characters in the book, Elizabeth, Jane, Lydia, and Darcy, your friend thinks that Darcy was the most mentioned. You, however, are certain it was Elizabeth. Obtain the full text of the novel from <http://www.gutenberg.org/cache/epub/42671/pg42671.txt> and save to your local folder.
+
 ```{bash}
 #| eval: false
 wget -nc http://www.gutenberg.org/cache/epub/42671/pg42671.txt
 ```
+
 **Solution:** Done.
 
 Explain what `wget -nc` does. Do **not** put this text file `pg42671.txt` in Git. Complete the following loop to tabulate the number of times each of the four characters is mentioned using Linux commands.
+
 ```{bash}
 for char in Elizabeth Jane Lydia Darcy
 do
@@ -224,48 +260,48 @@ do
   grep -o "\b$char\b" pg42671.txt | wc -l
 done
 ```
+
 **Solution:** `wget -nc` prevents the command from overwriting an existing file with the same name in the current directory; Elizabeth was mentioned 634 times, Jane was mentioned 293 times, Lydia was mentioned 170 times, and Darcy was mentioned 416 times.
 
-2. What's the difference between the following two commands?
+2.  What's the difference between the following two commands?
+
 ```{bash}
 #| eval: false
 echo 'hello, world' > test1.txt
 ```
+
 and
+
 ```{bash}
 #| eval: false
 echo 'hello, world' >> test2.txt
 ```
+
 **Solution:** Although both commands create the file if the file doesn't exist, the first command overwrites the file if it already exists and delete any existing content in test1.txt while the second command doesn't overwrite the file even if it already exists but instead preserves the existing content and adds the new text at the end.
 
-3. Using your favorite text editor (e.g., `vi`), type the following and save the file as `middle.sh`:
+3.  Using your favorite text editor (e.g., `vi`), type the following and save the file as `middle.sh`:
+
 ```{bash eval=FALSE}
 #!/bin/sh
 # Select lines from the middle of a file.
 # Usage: bash middle.sh filename end_line num_lines
 head -n "$2" "$1" | tail -n "$3"
 ```
+
 Using `chmod` to make the file executable by the owner, and run
+
 ```{bash}
 #| eval: false
 ./middle.sh pg42671.txt 20 5
 ```
+
 Explain the output. Explain the meaning of `"$1"`, `"$2"`, and `"$3"` in this shell script. Why do we need the first line of the shell script?
 
-**Solution:** My output is (Release date: May 9, 2013 [eBook #42671]
+**Solution:** My output is (Release date: May 9, 2013 \[eBook #42671\]
 
-Language: English). I have these outputs because the head command takes the 
-first 20 lines (-n "$2") from the file pg42671.txt ("$1") and the tail command 
-takes the last 5 lines (-n "$3") from the output of the head command. This 
-results in the 5 lines from line 16 to line 20 of the original file and my 
-outputs are part of lines 16 to 20 in pg42671.txt. 
+Language: English). I have these outputs because the head command takes the first 20 lines (-n "\$2") from the file pg42671.txt ("\$1") and the tail command takes the last 5 lines (-n "\$3") from the output of the head command. This results in the 5 lines from line 16 to line 20 of the original file and my outputs are part of lines 16 to 20 in pg42671.txt.
 
-`"$1"` stands for the first argument passed to the script 
-(pg42671.txt in this case) and this is the name of the file to be processed. 
-`"$2"` stands for the second argument (20), which specifies the number of lines 
-to select using the head command. `"$3"` stands for the third argument (5), 
-which specifies the number of lines to select from the output of the head 
-command using tail.
+`"$1"` stands for the first argument passed to the script (pg42671.txt in this case) and this is the name of the file to be processed. `"$2"` stands for the second argument (20), which specifies the number of lines to select using the head command. `"$3"` stands for the third argument (5), which specifies the number of lines to select from the output of the head command using tail.
 
 We need the first line of the shell script because it specifies the interpreter to be used to execute the script and preventing the system to try to interpret the script with a different shell.
 
@@ -273,33 +309,15 @@ We need the first line of the shell script because it specifies the interpreter 
 
 Try following commands in Bash and interpret the results: `cal`, `cal 2025`, `cal 9 1752` (anything unusual?), `date`, `hostname`, `arch`, `uname -a`, `uptime`, `who am i`, `who`, `w`, `id`, `last | head`, `echo {con,pre}{sent,fer}{s,ed}`, `time sleep 5`, `history | tail`.
 
-**Solution:**For `cal`, it displays the calendar for the current month; for `cal 2025`, it displays the calendar for the entire year 2025; for `cal 9 1752`, it 
-displays the calendar for September 1752. However, the calender is missing dates
-from September 3 to 13; for `date`, it displays the current date and time; for `hostname`, it displays the name of my computer or system; for `arch`, it shows 
-my system's architecture(x86_64); for `uname -a`, it displays detailed 
-information about my laptop's system, including the kernel name, version, and 
-system architecture; for `uptime`, it displays how long the system has been 
-running, the number of users(for me there is just one), and the system load 
-averages; for `who am i`, it displays information about my current session on 
-who logged in the system; for `who`, it displays information about the user 
-logged in, terminal, and login time; for `w`, it displays information like who 
-logged in, how long have I logged in up to the current time, when I logged in, 
-JCPU, and system load averages; for `id`, it displays my ID (UID), group ID 
-(GID), and group memberships for the current user; for `last | head`, it 
-displays first 10 most recent login history of users due to head; for 
-`echo {con,pre}{sent,fer}{s,ed}`, it shows all possible combinations of the text inside the curly braces ({}), for me they are consents consented confers 
-confered presents presented prefers prefered; for `time sleep 5`, it measures 
-the time it takes to execute the sleep 5 command, which pauses the terminal for 
-5 seconds. It shows real(0m5.013s), user(0m0.002s), and sys time(0m0,001s); for 
-`history | tail`, it displays the last 10 commands I executed from my Bash 
-command history.
+**Solution:**For `cal`, it displays the calendar for the current month; for `cal 2025`, it displays the calendar for the entire year 2025; for `cal 9 1752`, it displays the calendar for September 1752. However, the calender is missing dates from September 3 to 13; for `date`, it displays the current date and time; for `hostname`, it displays the name of my computer or system; for `arch`, it shows my system's architecture(x86_64); for `uname -a`, it displays detailed information about my laptop's system, including the kernel name, version, and system architecture; for `uptime`, it displays how long the system has been running, the number of users(for me there is just one), and the system load averages; for `who am i`, it displays information about my current session on who logged in the system; for `who`, it displays information about the user logged in, terminal, and login time; for `w`, it displays information like who logged in, how long have I logged in up to the current time, when I logged in, JCPU, and system load averages; for `id`, it displays my ID (UID), group ID (GID), and group memberships for the current user; for `last | head`, it displays first 10 most recent login history of users due to head; for `echo {con,pre}{sent,fer}{s,ed}`, it shows all possible combinations of the text inside the curly braces ({}), for me they are consents consented confers confered presents presented prefers prefered; for `time sleep 5`, it measures the time it takes to execute the sleep 5 command, which pauses the terminal for 5 seconds. It shows real(0m5.013s), user(0m0.002s), and sys time(0m0,001s); for `history | tail`, it displays the last 10 commands I executed from my Bash command history.
 
 ## Q6. Book
 
-1. Git clone the repository <https://github.com/christophergandrud/Rep-Res-Book> for the book _Reproducible Research with R and RStudio_ to your local machine. Do **not** put this repository within your homework repository `biostat-203b-2025-winter`.
+1.  Git clone the repository <https://github.com/christophergandrud/Rep-Res-Book> for the book *Reproducible Research with R and RStudio* to your local machine. Do **not** put this repository within your homework repository `biostat-203b-2025-winter`.
 
-2. Open the project by clicking `rep-res-3rd-edition.Rproj` and compile the book by clicking `Build Book` in the `Build` panel of RStudio. (Hint: I was able to build `git_book` and `epub_book` directly. For `pdf_book`, I needed to add a line `\usepackage{hyperref}` to the file `Rep-Res-Book/rep-res-3rd-edition/latex/preabmle.tex`.)
+2.  Open the project by clicking `rep-res-3rd-edition.Rproj` and compile the book by clicking `Build Book` in the `Build` panel of RStudio. (Hint: I was able to build `git_book` and `epub_book` directly. For `pdf_book`, I needed to add a line `\usepackage{hyperref}` to the file `Rep-Res-Book/rep-res-3rd-edition/latex/preabmle.tex`.)
 
 The point of this exercise is (1) to obtain the book for free and (2) to see an example how a complicated project such as a book can be organized in a reproducible way. Use `sudo apt install PKGNAME` to install required Ubuntu packages and `tlmgr install PKGNAME` to install missing TexLive packages.
 
-For grading purpose, include a screenshot of Section 4.1.5 of the book here.
+For grading purpose, include a screenshot of Section 4.1.5 of the book here. 
+**Solution:** Here is the screenshot of Section 4.1.5: ![](Section%204.1.5%20screenshot.png)
