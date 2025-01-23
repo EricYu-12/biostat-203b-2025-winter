@@ -199,9 +199,13 @@ sort |
 uniq |
 wc -l
 ```
-Therefore, There are 94458 ICU stays and 65366 unique patients.
+Therefore, there are 94458 ICU stays and 65366 unique patients.
 
 8. _To compress, or not to compress. That's the question._ Let's focus on the big data file `labevents.csv.gz`. Compare compressed gz file size to the uncompressed file size. Compare the run times of `zcat < ~/mimic/labevents.csv.gz | wc -l` versus `wc -l labevents.csv`. Discuss the trade off between storage and speed for big data files. (Hint: `gzip -dk < FILENAME.gz > ./FILENAME`. Remember to delete the large `labevents.csv` file after the exercise.)
+
+**Solution:** The size of the compressed gz file is 2.5G while that of the uncompressed file is 18G. The run time of `zcat < ~/mimic/labevents.csv.gz | wc -l` is 2minutes and 36.861 seconds while the run time of `wc -l labevents.csv` is 9minutes and 54.719 seconds. 
+
+Regarding trade offs between storage and speed for big data files, it is obcious that the compressed file takes up significantly less storage space than the uncompressed file, and the compressed file has significantly shorter run times than the uncompressed file due to smaller file size. In general, for large datasets, the compressed file takes up smaller storage space and shorter run time than the uncompressed file.   
 
 ## Q4. Who's popular in Price and Prejudice
 
@@ -220,7 +224,7 @@ do
   grep -o "\b$char\b" pg42671.txt | wc -l
 done
 ```
-**Solution:** The answers are: Elizabeth was mentioned 634 times, Jane was mentioned 293 times, Lydia was mentioned 170 times, and Darcy was mentioned 416 times.
+**Solution:** `wget -nc` prevents the command from overwriting an existing file with the same name in the current directory; Elizabeth was mentioned 634 times, Jane was mentioned 293 times, Lydia was mentioned 170 times, and Darcy was mentioned 416 times.
 
 2. What's the difference between the following two commands?
 ```{bash}
@@ -263,9 +267,7 @@ to select using the head command. `"$3"` stands for the third argument (5),
 which specifies the number of lines to select from the output of the head 
 command using tail.
 
-We need the first line of the shell script because it specifies the interpreter 
-to be used to execute the script, and this line nsures portability and 
-consistency
+We need the first line of the shell script because it specifies the interpreter to be used to execute the script and preventing the system to try to interpret the script with a different shell.
 
 ## Q5. More fun with Linux
 
