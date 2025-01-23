@@ -236,9 +236,17 @@ Therefore, there are 94458 ICU stays and 65366 unique patients.
 
 8.  *To compress, or not to compress. That's the question.* Let's focus on the big data file `labevents.csv.gz`. Compare compressed gz file size to the uncompressed file size. Compare the run times of `zcat < ~/mimic/labevents.csv.gz | wc -l` versus `wc -l labevents.csv`. Discuss the trade off between storage and speed for big data files. (Hint: `gzip -dk < FILENAME.gz > ./FILENAME`. Remember to delete the large `labevents.csv` file after the exercise.)
 
-**Solution:** The size of the compressed gz file is 2.5G while that of the uncompressed file is 18G. The run time of `zcat < ~/mimic/labevents.csv.gz | wc -l` is 2minutes and 36.861 seconds while the run time of `wc -l labevents.csv` is 9minutes and 54.719 seconds.
-
-Regarding trade offs between storage and speed for big data files, it is obcious that the compressed file takes up significantly less storage space than the uncompressed file, and the compressed file has significantly shorter run times than the uncompressed file due to smaller file size. In general, for large datasets, the compressed file takes up smaller storage space and shorter run time than the uncompressed file.
+**Solution:** The size of the compressed and uncompressed file respectively:
+```{bash}
+ls -lh ~/mimic/hosp/labevents.csv.gz 
+ls -lh ~/mimic/hosp/labevents.csv
+```
+The run time of the compressed and uncompressed files respectively: 
+```{bash}
+time zcat < ~/mimic/hosp/labevents.csv.gz | wc -l
+time wc -l ~/mimic/hosp/labevents.csv
+```
+Regarding trade offs between storage and speed for big data files, it is obvious that the compressed file takes up significantly less storage space than the uncompressed file, and the compressed file has significantly shorter run times than the uncompressed file due to smaller file size. In general, for large datasets, the compressed file takes up smaller storage space and shorter run time than the uncompressed file.
 
 ## Q4. Who's popular in Price and Prejudice
 

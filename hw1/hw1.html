@@ -3433,8 +3433,33 @@ drwxrwxrwx 1 zxhyu zxhyu  4096 Jan 21 23:42 icu</code></pre>
 <ol start="8" type="1">
 <li><em>To compress, or not to compress. That’s the question.</em> Let’s focus on the big data file <code>labevents.csv.gz</code>. Compare compressed gz file size to the uncompressed file size. Compare the run times of <code>zcat &lt; ~/mimic/labevents.csv.gz | wc -l</code> versus <code>wc -l labevents.csv</code>. Discuss the trade off between storage and speed for big data files. (Hint: <code>gzip -dk &lt; FILENAME.gz &gt; ./FILENAME</code>. Remember to delete the large <code>labevents.csv</code> file after the exercise.)</li>
 </ol>
-<p><strong>Solution:</strong> The size of the compressed gz file is 2.5G while that of the uncompressed file is 18G. The run time of <code>zcat &lt; ~/mimic/labevents.csv.gz | wc -l</code> is 2minutes and 36.861 seconds while the run time of <code>wc -l labevents.csv</code> is 9minutes and 54.719 seconds.</p>
-<p>Regarding trade offs between storage and speed for big data files, it is obcious that the compressed file takes up significantly less storage space than the uncompressed file, and the compressed file has significantly shorter run times than the uncompressed file due to smaller file size. In general, for large datasets, the compressed file takes up smaller storage space and shorter run time than the uncompressed file.</p>
+<p><strong>Solution:</strong> The size of the compressed and uncompressed file respectively:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb37"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ls</span> <span class="at">-lh</span> ~/mimic/hosp/labevents.csv.gz </span>
+<span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a><span class="fu">ls</span> <span class="at">-lh</span> ~/mimic/hosp/labevents.csv</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>-rwxrwxrwx 1 zxhyu zxhyu 2.5G Jan 21 23:41 /home/zxhyu/mimic/hosp/labevents.csv.gz
+-rwxrwxrwx 1 zxhyu zxhyu 18G Jan 21 23:41 /home/zxhyu/mimic/hosp/labevents.csv</code></pre>
+</div>
+</div>
+<p>The run time of the compressed and uncompressed files respectively:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb39"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="bu">time</span> zcat <span class="op">&lt;</span> ~/mimic/hosp/labevents.csv.gz <span class="kw">|</span> <span class="fu">wc</span> <span class="at">-l</span></span>
+<span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a><span class="bu">time</span> wc <span class="at">-l</span> ~/mimic/hosp/labevents.csv</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>158374765
+
+real    2m48.042s
+user    1m52.388s
+sys 0m20.456s
+158374765 /home/zxhyu/mimic/hosp/labevents.csv
+
+real    8m5.156s
+user    0m1.837s
+sys 0m11.654s</code></pre>
+</div>
+</div>
+<p>Regarding trade offs between storage and speed for big data files, it is obvious that the compressed file takes up significantly less storage space than the uncompressed file, and the compressed file has significantly shorter run times than the uncompressed file due to smaller file size. In general, for large datasets, the compressed file takes up smaller storage space and shorter run time than the uncompressed file.</p>
 </section>
 <section id="q4.-whos-popular-in-price-and-prejudice" class="level2">
 <h2 class="anchored" data-anchor-id="q4.-whos-popular-in-price-and-prejudice">Q4. Who’s popular in Price and Prejudice</h2>
@@ -3442,16 +3467,16 @@ drwxrwxrwx 1 zxhyu zxhyu  4096 Jan 21 23:42 icu</code></pre>
 <li>You and your friend just have finished reading <em>Pride and Prejudice</em> by Jane Austen. Among the four main characters in the book, Elizabeth, Jane, Lydia, and Darcy, your friend thinks that Darcy was the most mentioned. You, however, are certain it was Elizabeth. Obtain the full text of the novel from <a href="http://www.gutenberg.org/cache/epub/42671/pg42671.txt" class="uri">http://www.gutenberg.org/cache/epub/42671/pg42671.txt</a> and save to your local folder.</li>
 </ol>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb37"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="fu">wget</span> <span class="at">-nc</span> http://www.gutenberg.org/cache/epub/42671/pg42671.txt</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb41"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a><span class="fu">wget</span> <span class="at">-nc</span> http://www.gutenberg.org/cache/epub/42671/pg42671.txt</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p><strong>Solution:</strong> Done.</p>
 <p>Explain what <code>wget -nc</code> does. Do <strong>not</strong> put this text file <code>pg42671.txt</code> in Git. Complete the following loop to tabulate the number of times each of the four characters is mentioned using Linux commands.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb38"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> char <span class="kw">in</span> Elizabeth Jane Lydia Darcy</span>
-<span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a><span class="cf">do</span></span>
-<span id="cb38-3"><a href="#cb38-3" aria-hidden="true" tabindex="-1"></a>  <span class="bu">echo</span> <span class="va">$char</span>:</span>
-<span id="cb38-4"><a href="#cb38-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">grep</span> <span class="at">-o</span> <span class="st">&quot;\b</span><span class="va">$char</span><span class="st">\b&quot;</span> pg42671.txt <span class="kw">|</span> <span class="fu">wc</span> <span class="at">-l</span></span>
-<span id="cb38-5"><a href="#cb38-5" aria-hidden="true" tabindex="-1"></a><span class="cf">done</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb42"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> char <span class="kw">in</span> Elizabeth Jane Lydia Darcy</span>
+<span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a><span class="cf">do</span></span>
+<span id="cb42-3"><a href="#cb42-3" aria-hidden="true" tabindex="-1"></a>  <span class="bu">echo</span> <span class="va">$char</span>:</span>
+<span id="cb42-4"><a href="#cb42-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">grep</span> <span class="at">-o</span> <span class="st">&quot;\b</span><span class="va">$char</span><span class="st">\b&quot;</span> pg42671.txt <span class="kw">|</span> <span class="fu">wc</span> <span class="at">-l</span></span>
+<span id="cb42-5"><a href="#cb42-5" aria-hidden="true" tabindex="-1"></a><span class="cf">done</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Elizabeth:
 634
@@ -3468,25 +3493,25 @@ Darcy:
 <li>What’s the difference between the following two commands?</li>
 </ol>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb40"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">&#39;hello, world&#39;</span> <span class="op">&gt;</span> test1.txt</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb44"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">&#39;hello, world&#39;</span> <span class="op">&gt;</span> test1.txt</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>and</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb41"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">&#39;hello, world&#39;</span> <span class="op">&gt;&gt;</span> test2.txt</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb45"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">&#39;hello, world&#39;</span> <span class="op">&gt;&gt;</span> test2.txt</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p><strong>Solution:</strong> Although both commands create the file if the file doesn’t exist, the first command overwrites the file if it already exists and delete any existing content in test1.txt while the second command doesn’t overwrite the file even if it already exists but instead preserves the existing content and adds the new text at the end.</p>
 <ol start="3" type="1">
 <li>Using your favorite text editor (e.g., <code>vi</code>), type the following and save the file as <code>middle.sh</code>:</li>
 </ol>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb42"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a><span class="co">#!/bin/sh</span></span>
-<span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Select lines from the middle of a file.</span></span>
-<span id="cb42-3"><a href="#cb42-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Usage: bash middle.sh filename end_line num_lines</span></span>
-<span id="cb42-4"><a href="#cb42-4" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span> <span class="at">-n</span> <span class="st">&quot;</span><span class="va">$2</span><span class="st">&quot;</span> <span class="st">&quot;</span><span class="va">$1</span><span class="st">&quot;</span> <span class="kw">|</span> <span class="fu">tail</span> <span class="at">-n</span> <span class="st">&quot;</span><span class="va">$3</span><span class="st">&quot;</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb46"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a><span class="co">#!/bin/sh</span></span>
+<span id="cb46-2"><a href="#cb46-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Select lines from the middle of a file.</span></span>
+<span id="cb46-3"><a href="#cb46-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Usage: bash middle.sh filename end_line num_lines</span></span>
+<span id="cb46-4"><a href="#cb46-4" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span> <span class="at">-n</span> <span class="st">&quot;</span><span class="va">$2</span><span class="st">&quot;</span> <span class="st">&quot;</span><span class="va">$1</span><span class="st">&quot;</span> <span class="kw">|</span> <span class="fu">tail</span> <span class="at">-n</span> <span class="st">&quot;</span><span class="va">$3</span><span class="st">&quot;</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>Using <code>chmod</code> to make the file executable by the owner, and run</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb43"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a><span class="ex">./middle.sh</span> pg42671.txt 20 5</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb47"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a><span class="ex">./middle.sh</span> pg42671.txt 20 5</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>Explain the output. Explain the meaning of <code>&quot;$1&quot;</code>, <code>&quot;$2&quot;</code>, and <code>&quot;$3&quot;</code> in this shell script. Why do we need the first line of the shell script?</p>
 <p><strong>Solution:</strong> My output is (Release date: May 9, 2013 [eBook #42671]</p>
@@ -3499,7 +3524,7 @@ Darcy:
 <p>Try following commands in Bash and interpret the results: <code>cal</code>, <code>cal 2025</code>, <code>cal 9 1752</code> (anything unusual?), <code>date</code>, <code>hostname</code>, <code>arch</code>, <code>uname -a</code>, <code>uptime</code>, <code>who am i</code>, <code>who</code>, <code>w</code>, <code>id</code>, <code>last | head</code>, <code>echo {con,pre}{sent,fer}{s,ed}</code>, <code>time sleep 5</code>, <code>history | tail</code>.</p>
 <p><strong>Solution:</strong></p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb44"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cal</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb48"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb48-1"><a href="#cb48-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cal</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>    January 2025      
 Su Mo Tu We Th Fr Sa  
@@ -3513,7 +3538,7 @@ Su Mo Tu We Th Fr Sa
 </div>
 <p>For <code>cal</code>, it displays the calendar for the current month;</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb46"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cal</span> 2025</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb50"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb50-1"><a href="#cb50-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cal</span> 2025</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>                            2025
       January               February               March          
@@ -3555,7 +3580,7 @@ Su Mo Tu We Th Fr Sa  Su Mo Tu We Th Fr Sa  Su Mo Tu We Th Fr Sa
 </div>
 <p>For <code>cal 2025</code>, it displays the calendar for the entire year 2025;</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb48"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb48-1"><a href="#cb48-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cal</span> 9 1752</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb52"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb52-1"><a href="#cb52-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cal</span> 9 1752</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>   September 1752     
 Su Mo Tu We Th Fr Sa  
@@ -3569,105 +3594,105 @@ Su Mo Tu We Th Fr Sa
 </div>
 <p>For <code>cal 9 1752</code>, it displays the calendar for September 1752. However, the calender is missing dates from September 3 to 13;</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb50"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb50-1"><a href="#cb50-1" aria-hidden="true" tabindex="-1"></a><span class="fu">date</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb54"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb54-1"><a href="#cb54-1" aria-hidden="true" tabindex="-1"></a><span class="fu">date</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>Thu Jan 23 12:37:28 PST 2025</code></pre>
+<pre><code>Thu Jan 23 15:50:56 PST 2025</code></pre>
 </div>
 </div>
 <p>For <code>date</code>, it displays the current date and time;</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb52"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb52-1"><a href="#cb52-1" aria-hidden="true" tabindex="-1"></a><span class="fu">hostname</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb56"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb56-1"><a href="#cb56-1" aria-hidden="true" tabindex="-1"></a><span class="fu">hostname</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Zhiyuan</code></pre>
 </div>
 </div>
 <p>For <code>hostname</code>, it displays the name of my computer or system (Zhiyuan);</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb54"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb54-1"><a href="#cb54-1" aria-hidden="true" tabindex="-1"></a><span class="fu">arch</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb58"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb58-1"><a href="#cb58-1" aria-hidden="true" tabindex="-1"></a><span class="fu">arch</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>x86_64</code></pre>
 </div>
 </div>
 <p>For <code>arch</code>, it shows my system’s architecture(x86_64);</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb56"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb56-1"><a href="#cb56-1" aria-hidden="true" tabindex="-1"></a><span class="fu">uname</span> <span class="at">-a</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb60"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb60-1"><a href="#cb60-1" aria-hidden="true" tabindex="-1"></a><span class="fu">uname</span> <span class="at">-a</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Linux Zhiyuan 5.15.167.4-microsoft-standard-WSL2 #1 SMP Tue Nov 5 00:21:55 UTC 2024 x86_64 x86_64 x86_64 GNU/Linux</code></pre>
 </div>
 </div>
 <p>For <code>uname -a</code>, it displays detailed information about my laptop’s system, including the kernel name, version, and system architecture;</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb58"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb58-1"><a href="#cb58-1" aria-hidden="true" tabindex="-1"></a><span class="fu">uptime</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb62"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb62-1"><a href="#cb62-1" aria-hidden="true" tabindex="-1"></a><span class="fu">uptime</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code> 12:37:28 up 39 min,  1 user,  load average: 0.32, 0.12, 0.04</code></pre>
+<pre><code> 15:50:56 up 46 min,  1 user,  load average: 1.06, 1.01, 0.87</code></pre>
 </div>
 </div>
 <p>For <code>uptime</code>, it displays the current time, how long the system has been running, the number of users(for me there is just one), and the system load average;</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb60"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb60-1"><a href="#cb60-1" aria-hidden="true" tabindex="-1"></a><span class="fu">whoami</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb64"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb64-1"><a href="#cb64-1" aria-hidden="true" tabindex="-1"></a><span class="fu">whoami</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>zxhyu</code></pre>
 </div>
 </div>
 <p>For <code>who am i</code>, it displays information about my current session on who logged in the system;</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb62"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb62-1"><a href="#cb62-1" aria-hidden="true" tabindex="-1"></a><span class="fu">who</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb66"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb66-1"><a href="#cb66-1" aria-hidden="true" tabindex="-1"></a><span class="fu">who</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>zxhyu    pts/1        2025-01-23 11:58</code></pre>
+<pre><code>zxhyu    pts/1        2025-01-23 15:05</code></pre>
 </div>
 </div>
 <p>For <code>who</code>, it displays information about the user logged in, terminal, and login time;</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb64"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb64-1"><a href="#cb64-1" aria-hidden="true" tabindex="-1"></a><span class="fu">w</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb68"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb68-1"><a href="#cb68-1" aria-hidden="true" tabindex="-1"></a><span class="fu">w</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code> 12:37:28 up 39 min,  1 user,  load average: 0.32, 0.12, 0.04
+<pre><code> 15:50:56 up 46 min,  1 user,  load average: 1.06, 1.01, 0.87
 USER     TTY      FROM             LOGIN@   IDLE   JCPU   PCPU WHAT
-zxhyu    pts/1    -                11:58   39:08   0.00s   ?    -bash</code></pre>
+zxhyu    pts/1    -                15:05   45:52   0.03s  0.02s -bash</code></pre>
 </div>
 </div>
 <p>For <code>w</code>, its display is more like a combination of the display by running <code>uptime</code>, <code>who am i</code>, and <code>who</code> and some additional information;</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb66"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb66-1"><a href="#cb66-1" aria-hidden="true" tabindex="-1"></a><span class="fu">id</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb70"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb70-1"><a href="#cb70-1" aria-hidden="true" tabindex="-1"></a><span class="fu">id</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>uid=1000(zxhyu) gid=1000(zxhyu) groups=1000(zxhyu),4(adm),20(dialout),24(cdrom),25(floppy),27(sudo),29(audio),30(dip),44(video),46(plugdev),100(users),107(netdev)</code></pre>
 </div>
 </div>
 <p>For <code>id</code>, it displays my ID (UID), group ID (GID), and group memberships for the current user;</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb68"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb68-1"><a href="#cb68-1" aria-hidden="true" tabindex="-1"></a><span class="fu">last</span> <span class="kw">|</span> <span class="fu">head</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb72"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb72-1"><a href="#cb72-1" aria-hidden="true" tabindex="-1"></a><span class="fu">last</span> <span class="kw">|</span> <span class="fu">head</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>reboot   system boot  5.15.167.4-micro Thu Jan 23 11:58   still running
+<pre><code>reboot   system boot  5.15.167.4-micro Thu Jan 23 15:05   still running
+reboot   system boot  5.15.167.4-micro Thu Jan 23 13:27   still running
+reboot   system boot  5.15.167.4-micro Thu Jan 23 11:58   still running
 reboot   system boot  5.15.167.4-micro Wed Jan 22 18:14   still running
 reboot   system boot  5.15.167.4-micro Wed Jan 22 17:55   still running
 reboot   system boot  5.15.167.4-micro Tue Jan 21 23:41   still running
 reboot   system boot  5.15.167.4-micro Tue Jan 21 14:56   still running
 reboot   system boot  5.15.167.4-micro Tue Jan 21 11:35   still running
 reboot   system boot  5.15.167.4-micro Mon Jan 20 18:42   still running
-reboot   system boot  5.15.167.4-micro Fri Jan 17 17:21   still running
-reboot   system boot  5.15.167.4-micro Thu Jan 16 00:34   still running
-reboot   system boot  5.15.167.4-micro Tue Jan 14 15:34   still running</code></pre>
+reboot   system boot  5.15.167.4-micro Fri Jan 17 17:21   still running</code></pre>
 </div>
 </div>
 <p>For <code>last | head</code>, it displays first 10 most recent login history of users due to head;</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb70"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb70-1"><a href="#cb70-1" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="dt">{con</span><span class="op">,</span><span class="dt">pre}{sent</span><span class="op">,</span><span class="dt">fer}{s</span><span class="op">,</span><span class="dt">ed}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb74"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb74-1"><a href="#cb74-1" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="dt">{con</span><span class="op">,</span><span class="dt">pre}{sent</span><span class="op">,</span><span class="dt">fer}{s</span><span class="op">,</span><span class="dt">ed}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>consents consented confers confered presents presented prefers prefered</code></pre>
 </div>
 </div>
 <p>For <code>echo {con,pre}{sent,fer}{s,ed}</code>, it shows all possible combinations of the text inside the curly braces ({}), for me they are consents consented confers confered presents presented prefers prefered;</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb72"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb72-1"><a href="#cb72-1" aria-hidden="true" tabindex="-1"></a><span class="bu">time</span> sleep 5</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb76"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb76-1"><a href="#cb76-1" aria-hidden="true" tabindex="-1"></a><span class="bu">time</span> sleep 5</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>
-real    0m5.003s
+real    0m5.008s
 user    0m0.001s
 sys 0m0.000s</code></pre>
 </div>
 </div>
 <p>For <code>time sleep 5</code>, it measures the time it takes to execute the sleep 5 command, which pauses the terminal for 5 seconds. For me it shows real(0m5.004s), user(0m0.002s), and sys time(0m0,000s);</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb74"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb74-1"><a href="#cb74-1" aria-hidden="true" tabindex="-1"></a><span class="bu">history</span> <span class="kw">|</span> <span class="fu">tail</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb78"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb78-1"><a href="#cb78-1" aria-hidden="true" tabindex="-1"></a><span class="bu">history</span> <span class="kw">|</span> <span class="fu">tail</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>For <code>history | tail</code>, it displays the most recent 10 commands I executed from my bash command history.</p>
 </section>
