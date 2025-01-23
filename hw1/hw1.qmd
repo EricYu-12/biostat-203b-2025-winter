@@ -309,7 +309,72 @@ We need the first line of the shell script because it specifies the interpreter 
 
 Try following commands in Bash and interpret the results: `cal`, `cal 2025`, `cal 9 1752` (anything unusual?), `date`, `hostname`, `arch`, `uname -a`, `uptime`, `who am i`, `who`, `w`, `id`, `last | head`, `echo {con,pre}{sent,fer}{s,ed}`, `time sleep 5`, `history | tail`.
 
-**Solution:**For `cal`, it displays the calendar for the current month; for `cal 2025`, it displays the calendar for the entire year 2025; for `cal 9 1752`, it displays the calendar for September 1752. However, the calender is missing dates from September 3 to 13; for `date`, it displays the current date and time; for `hostname`, it displays the name of my computer or system; for `arch`, it shows my system's architecture(x86_64); for `uname -a`, it displays detailed information about my laptop's system, including the kernel name, version, and system architecture; for `uptime`, it displays how long the system has been running, the number of users(for me there is just one), and the system load averages; for `who am i`, it displays information about my current session on who logged in the system; for `who`, it displays information about the user logged in, terminal, and login time; for `w`, it displays information like who logged in, how long have I logged in up to the current time, when I logged in, JCPU, and system load averages; for `id`, it displays my ID (UID), group ID (GID), and group memberships for the current user; for `last | head`, it displays first 10 most recent login history of users due to head; for `echo {con,pre}{sent,fer}{s,ed}`, it shows all possible combinations of the text inside the curly braces ({}), for me they are consents consented confers confered presents presented prefers prefered; for `time sleep 5`, it measures the time it takes to execute the sleep 5 command, which pauses the terminal for 5 seconds. It shows real(0m5.013s), user(0m0.002s), and sys time(0m0,001s); for `history | tail`, it displays the last 10 commands I executed from my Bash command history.
+**Solution:** 
+```{bash}
+cal
+```
+For `cal`, it displays the calendar for the current month; 
+```{bash}
+cal 2025
+```
+For `cal 2025`, it displays the calendar for the entire year 2025; 
+```{bash}
+cal 9 1752
+```
+For `cal 9 1752`, it displays the calendar for September 1752. However, the calender is missing dates from September 3 to 13; 
+```{bash}
+date
+```
+For `date`, it displays the current date and time; 
+```{bash}
+hostname
+```
+
+For `hostname`, it displays the name of my computer or system (Zhiyuan); 
+```{bash}
+arch
+```
+For `arch`, it shows my system's architecture(x86_64); 
+```{bash}
+uname -a
+```
+For `uname -a`, it displays detailed information about my laptop's system, including the kernel name, version, and system architecture;
+```{bash}
+uptime
+```
+For `uptime`, it displays the current time, how long the system has been running, the number of users(for me there is just one), and the system load average; 
+```{bash}
+whoami
+```
+For `who am i`, it displays information about my current session on who logged in the system;
+```{bash}
+who
+```
+For `who`, it displays information about the user logged in, terminal, and login time; 
+```{bash}
+w
+```
+For `w`, its display is more like a combination of the display by running `uptime`, `who am i`, and `who` and some additional information;
+```{bash}
+id
+```
+For `id`, it displays my ID (UID), group ID (GID), and group memberships for the current user; 
+```{bash}
+last | head
+```
+For `last | head`, it displays first 10 most recent login history of users due to head; 
+```{bash}
+echo {con,pre}{sent,fer}{s,ed}
+```
+For `echo {con,pre}{sent,fer}{s,ed}`, it shows all possible combinations of the text inside the curly braces ({}), for me they are consents consented confers confered presents presented prefers prefered; 
+```{bash}
+time sleep 5
+```
+For `time sleep 5`, it measures the time it takes to execute the sleep 5 command, which pauses the terminal for 5 seconds. For me it shows real(0m5.004s), user(0m0.002s), and sys time(0m0,000s); 
+```{bash}
+history | tail
+```
+For `history | tail`, it displays the most recent 10 commands I executed from my bash command history.
 
 ## Q6. Book
 
