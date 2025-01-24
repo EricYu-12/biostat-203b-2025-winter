@@ -3,17 +3,16 @@ title: "Biostat 203B Homework 1"
 subtitle: Due Jan 24, 2025 @ 11:59PM
 author: Zhiyuan Yu 906405523
 format:
-  typst: default
-    #html:
-    #theme: cosmo
-    #embed-resources: true
-    #number-sections: false
-    #toc: true
-    #toc-depth: 4
-    #toc-location: left
-    #code-fold: false
-    #link-external-icon: true
-    #link-external-newwindow: true
+  html:
+    theme: cosmo
+    embed-resources: true
+    number-sections: false
+    toc: true
+    toc-depth: 4
+    toc-location: left
+    code-fold: false
+    link-external-icon: true
+    link-external-newwindow: true
 ---
 
 Display machine information for reproducibility:
