@@ -3,16 +3,17 @@ title: "Biostat 203B Homework 1"
 subtitle: Due Jan 24, 2025 @ 11:59PM
 author: Zhiyuan Yu 906405523
 format:
-  html:
-    theme: cosmo
-    embed-resources: true
-    number-sections: false
-    toc: true
-    toc-depth: 4
-    toc-location: left
-    code-fold: false
-    link-external-icon: true
-    link-external-newwindow: true
+  typst: default
+    #html:
+    #theme: cosmo
+    #embed-resources: true
+    #number-sections: false
+    #toc: true
+    #toc-depth: 4
+    #toc-location: left
+    #code-fold: false
+    #link-external-icon: true
+    #link-external-newwindow: true
 ---
 
 Display machine information for reproducibility:
@@ -103,7 +104,7 @@ do
 done
 ```
 
-**Solution:** The number of lines in admissions is 546029, the number of lines in labevents is 158374765, the number of lines in patients is 364628.
+**Solution:** The number of lines in admissions is 546029, the number of lines in labevents is 158374765, and the number of lines in patients is 364628.
 
 5.  Display the first few lines of `admissions.csv.gz`. How many rows are in this data file, excluding the header line? Each `hadm_id` identifies a hospitalization. How many hospitalizations are in this data file? How many unique patients (identified by `subject_id`) are in this data file? Do they match the number of patients listed in the `patients.csv.gz` file? (Hint: combine Linux commands `zcat <`, `head`/`tail`, `awk`, `sort`, `uniq`, `wc`, and so on.)
 
@@ -160,7 +161,7 @@ Regarding the count for each unique value of these variables For admission_type:
 ```{bash}
 zcat ~/mimic/hosp/admissions.csv.gz | 
 tail -n +2 | 
-awk -F',' '{print $6}' | 
+awk -F, '{print $6}' | 
 sort | 
 uniq |
 wc -l
@@ -170,7 +171,7 @@ For admission_location:
 ```{bash}
 zcat ~/mimic/hosp/admissions.csv.gz | 
 tail -n +2 | 
-awk -F',' '{print $8}' | 
+awk -F, '{print $8}' | 
 sort | 
 uniq |
 wc -l
@@ -180,7 +181,7 @@ For insurance:
 ```{bash}
 zcat ~/mimic/hosp/admissions.csv.gz | 
 tail -n +2 | 
-awk -F',' '{print $10}' | 
+awk -F, '{print $10}' | 
 sort | 
 uniq |
 wc -l
@@ -190,7 +191,7 @@ For ethnicity:
 ```{bash}
 zcat ~/mimic/hosp/admissions.csv.gz | 
 tail -n +2 | 
-awk -F',' '{print $13}' | 
+awk -F, '{print $13}' | 
 sort | 
 uniq |
 wc -l
@@ -284,7 +285,7 @@ and
 echo 'hello, world' >> test2.txt
 ```
 
-**Solution:** Although both commands create the file if the file doesn't exist, the first command overwrites the file if it already exists and delete any existing content in test1.txt while the second command doesn't overwrite the file even if it already exists but instead preserves the existing content and adds the new text at the end.
+**Solution:** Although both commands create the file if the file doesn't exist, the first command has the ">" operater which overwrites the contents in text1.txt and replace them with "hello, world" if it already exists while the second command has the ">>" operator which doesn't overwrite the file even if it already exists but instead preserves the existing content and adds "the new text"hello, world" at the end.
 
 3.  Using your favorite text editor (e.g., `vi`), type the following and save the file as `middle.sh`:
 
@@ -305,7 +306,7 @@ chmod +x middle.sh
 
 Explain the output. Explain the meaning of `"$1"`, `"$2"`, and `"$3"` in this shell script. Why do we need the first line of the shell script?
 
-**Solution:** The above is my output. I have these outputs because the head command takes the first 20 lines (-n "\$2") from the file pg42671.txt ("\$1") and the tail command takes the last 5 lines (-n "\$3") from the output of the head command. This results in the 5 lines from line 16 to line 20 of the original file and my outputs are part of lines 16 to 20 in pg42671.txt.
+**Solution:** The above is my output. I have these outputs because the head command takes the first 20 lines from the file pg42671.txt and the tail command takes the last 5 lines from the output of the head command. This results in the 5 lines from line 16 to line 20 of the original file and my outputs are part of lines 16 to 20 in pg42671.txt.
 
 `"$1"` stands for the first argument passed to the script (pg42671.txt in this case) and this is the name of the file to be processed. `"$2"` stands for the second argument (20), which specifies the number of lines to select using the head command. `"$3"` stands for the third argument (5), which specifies the number of lines to select from the output of the head command using tail.
 
