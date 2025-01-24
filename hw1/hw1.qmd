@@ -108,19 +108,16 @@ done
 5.  Display the first few lines of `admissions.csv.gz`. How many rows are in this data file, excluding the header line? Each `hadm_id` identifies a hospitalization. How many hospitalizations are in this data file? How many unique patients (identified by `subject_id`) are in this data file? Do they match the number of patients listed in the `patients.csv.gz` file? (Hint: combine Linux commands `zcat <`, `head`/`tail`, `awk`, `sort`, `uniq`, `wc`, and so on.)
 
 **Solution:** Here is the first few lines of `admissions.csv.gz`
-
 ```{bash}
 zcat < ~/mimic/hosp/admissions.csv.gz | head
 ```
 
 The number of rows in this data file, excluding the header line, is
-
 ```{bash}
 zcat < ~/mimic/hosp/admissions.csv.gz | tail -n +2 | wc -l
 ```
 
 The number of hospitalizations in this data file is
-
 ```{bash}
 zcat < ~/mimic/hosp/admissions.csv.gz | 
 tail -n +2 | 
@@ -129,9 +126,9 @@ sort |
 uniq |
 wc -l
 ```
+which is the same as the number of rows in the file.
 
-the same as the number of rows in the file. The number of unique patients in this data file is
-
+The number of unique patients in this data file is
 ```{bash}
 zcat < ~/mimic/hosp/admissions.csv.gz |
 tail -n +2 |
@@ -140,7 +137,6 @@ sort |
 uniq |
 wc -l
 ```
-
 which is less than the number of patients listed in the `patients.csv.gz` file
 
 ```{bash}
@@ -152,16 +148,15 @@ uniq |
 wc -l
 ```
 
-6.  What are the possible values taken by each of the variable `admission_type`, `admission_location`, `insurance`, and `ethnicity`? Also report the count for each unique value of these variables in decreasing order. (Hint: combine Linux commands `zcat`, `head`/`tail`, `awk`, `uniq -c`, `wc`, `sort`, and so on; skip the header line.) **Solution:**
+6.  What are the possible values taken by each of the variable `admission_type`, `admission_location`, `insurance`, and `ethnicity`? Also report the count for each unique value of these variables in decreasing order. (Hint: combine Linux commands `zcat`, `head`/`tail`, `awk`, `uniq -c`, `wc`, `sort`, and so on; skip the header line.)
 
+**Solution:**
 ```{bash}
 zcat ~/mimic/hosp/admissions.csv.gz | head -1
 ```
-
 admission_type takes 6, admission_location takes 8, insurance takes 10, and ethnicity takes 13.
 
 Regarding the count for each unique value of these variables For admission_type:
-
 ```{bash}
 zcat ~/mimic/hosp/admissions.csv.gz | 
 tail -n +2 | 
@@ -172,7 +167,6 @@ wc -l
 ```
 
 For admission_location:
-
 ```{bash}
 zcat ~/mimic/hosp/admissions.csv.gz | 
 tail -n +2 | 
@@ -183,7 +177,6 @@ wc -l
 ```
 
 For insurance:
-
 ```{bash}
 zcat ~/mimic/hosp/admissions.csv.gz | 
 tail -n +2 | 
@@ -194,7 +187,6 @@ wc -l
 ```
 
 For ethnicity:
-
 ```{bash}
 zcat ~/mimic/hosp/admissions.csv.gz | 
 tail -n +2 | 
@@ -203,17 +195,16 @@ sort |
 uniq |
 wc -l
 ```
-
 In decreasing order, the count of unique values are 33, 12, 9, 6.
 
 7.  The `icustays.csv.gz` file contains all the ICU stays during the study period. How many ICU stays, identified by `stay_id`, are in this data file? How many unique patients, identified by `subject_id`, are in this data file?
+**Solution:**
 
 ```{bash}
 zcat ~/mimic/icu/icustays.csv.gz | head 
 ```
 
 Count ICU stays:
-
 ```{bash}
 zcat ~/mimic/icu/icustays.csv.gz | 
 tail -n +2 | 
@@ -222,7 +213,6 @@ wc -l
 ```
 
 Count unique patients:
-
 ```{bash}
 zcat ~/mimic/icu/icustays.csv.gz | 
 tail -n +2 | 
@@ -231,12 +221,16 @@ sort |
 uniq |
 wc -l
 ```
-
 Therefore, there are 94458 ICU stays and 65366 unique patients.
 
 8.  *To compress, or not to compress. That's the question.* Let's focus on the big data file `labevents.csv.gz`. Compare compressed gz file size to the uncompressed file size. Compare the run times of `zcat < ~/mimic/labevents.csv.gz | wc -l` versus `wc -l labevents.csv`. Discuss the trade off between storage and speed for big data files. (Hint: `gzip -dk < FILENAME.gz > ./FILENAME`. Remember to delete the large `labevents.csv` file after the exercise.)
 
-**Solution:** The size of the compressed and uncompressed file respectively:
+**Solution:** 
+First, we unzip the labevent file:
+```{bash}
+gzip -dk ~/mimic/hosp/labevents.csv.gz
+```
+The size of the compressed and uncompressed file respectively:
 ```{bash}
 ls -lh ~/mimic/hosp/labevents.csv.gz 
 ls -lh ~/mimic/hosp/labevents.csv
@@ -246,7 +240,12 @@ The run time of the compressed and uncompressed files respectively:
 time zcat < ~/mimic/hosp/labevents.csv.gz | wc -l
 time wc -l ~/mimic/hosp/labevents.csv
 ```
-Regarding trade offs between storage and speed for big data files, it is obvious that the compressed file takes up significantly less storage space than the uncompressed file, and the compressed file has significantly shorter run times than the uncompressed file due to smaller file size. In general, for large datasets, the compressed file takes up smaller storage space and shorter run time than the uncompressed file.
+Regarding trade offs between storage and speed for big data files, it is obvious from my result that the compressed file takes up significantly less storage space than the uncompressed file, and the compressed file has shorter run times than the uncompressed file. While expectively the uncompressed file would take shorter time to run than the compressed file since the system could read the data directly without spending time to unzip the file, but the reason for the longer processing time for the uncompressed file in my case could be due to the large size of the file. 
+
+Delete the large decompressed labevent file:
+```{bash}
+rm ~/mimic/hosp/labevents.csv
+```
 
 ## Q4. Who's popular in Price and Prejudice
 
@@ -306,7 +305,7 @@ chmod +x middle.sh
 
 Explain the output. Explain the meaning of `"$1"`, `"$2"`, and `"$3"` in this shell script. Why do we need the first line of the shell script?
 
-**Solution:** Above is my output. I have these outputs because the head command takes the first 20 lines (-n "\$2") from the file pg42671.txt ("\$1") and the tail command takes the last 5 lines (-n "\$3") from the output of the head command. This results in the 5 lines from line 16 to line 20 of the original file and my outputs are part of lines 16 to 20 in pg42671.txt.
+**Solution:** The above is my output. I have these outputs because the head command takes the first 20 lines (-n "\$2") from the file pg42671.txt ("\$1") and the tail command takes the last 5 lines (-n "\$3") from the output of the head command. This results in the 5 lines from line 16 to line 20 of the original file and my outputs are part of lines 16 to 20 in pg42671.txt.
 
 `"$1"` stands for the first argument passed to the script (pg42671.txt in this case) and this is the name of the file to be processed. `"$2"` stands for the second argument (20), which specifies the number of lines to select using the head command. `"$3"` stands for the third argument (5), which specifies the number of lines to select from the output of the head command using tail.
 
