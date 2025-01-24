@@ -83,7 +83,7 @@ The .csv.gz files are compressed versions of .csv files. These data were distrib
 4.  (Looping in Bash) What's the output of the following bash script?
 
 ```{bash}
-#| eval: false
+#| eval: true
 for datafile in ~/mimic/hosp/{a,l,pa}*.gz
 do
   ls -l $datafile
@@ -95,7 +95,7 @@ done
 Display the number of lines in each data file using a similar loop. (Hint: combine linux commands `zcat <` and `wc -l`.)
 
 ```{bash}
-#| eval: false
+#| eval: true
 for datafile in ~/mimic/hosp/{a,l,pa}*.gz
 do
   echo "File: $datafile"
@@ -299,15 +299,14 @@ head -n "$2" "$1" | tail -n "$3"
 Using `chmod` to make the file executable by the owner, and run
 
 ```{bash}
-#| eval: false
+#| eval: true
+chmod +x middle.sh
 ./middle.sh pg42671.txt 20 5
 ```
 
 Explain the output. Explain the meaning of `"$1"`, `"$2"`, and `"$3"` in this shell script. Why do we need the first line of the shell script?
 
-**Solution:** My output is (Release date: May 9, 2013 \[eBook #42671\]
-
-Language: English). I have these outputs because the head command takes the first 20 lines (-n "\$2") from the file pg42671.txt ("\$1") and the tail command takes the last 5 lines (-n "\$3") from the output of the head command. This results in the 5 lines from line 16 to line 20 of the original file and my outputs are part of lines 16 to 20 in pg42671.txt.
+**Solution:** Above is my output. I have these outputs because the head command takes the first 20 lines (-n "\$2") from the file pg42671.txt ("\$1") and the tail command takes the last 5 lines (-n "\$3") from the output of the head command. This results in the 5 lines from line 16 to line 20 of the original file and my outputs are part of lines 16 to 20 in pg42671.txt.
 
 `"$1"` stands for the first argument passed to the script (pg42671.txt in this case) and this is the name of the file to be processed. `"$2"` stands for the second argument (20), which specifies the number of lines to select using the head command. `"$3"` stands for the third argument (5), which specifies the number of lines to select from the output of the head command using tail.
 
