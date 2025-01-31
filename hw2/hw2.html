@@ -3285,14 +3285,14 @@ Attaching package: &#39;R.utils&#39;</code></pre>
 ✖ lubridate::year()     masks data.table::year()
 ℹ Use the conflicted package (&lt;http://conflicted.r-lib.org/&gt;) to force all conflicts to become errors</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(readr)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(stringr)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>Display memory information of your computer</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>memuse<span class="sc">::</span><span class="fu">Sys.meminfo</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Totalram:  15.463 GiB 
-Freeram:   14.330 GiB </code></pre>
+Freeram:   13.623 GiB </code></pre>
 </div>
 </div>
 <p>In this exercise, we explore various tools for ingesting the <a href="https://physionet.org/content/mimiciv/3.1/">MIMIC-IV</a> data introduced in <a href="https://ucla-biostat-203b.github.io/2025winter/hw/hw1/hw1.html">homework 1</a>.</p>
@@ -3345,10 +3345,199 @@ Freeram:   14.330 GiB </code></pre>
 <section id="q1.1-speed-memory-and-data-types" class="level3">
 <h3 class="anchored" data-anchor-id="q1.1-speed-memory-and-data-types">Q1.1 Speed, memory, and data types</h3>
 <p>There are quite a few utilities in R for reading plain text data files. Let us test the speed of reading a moderate sized compressed csv file, <code>admissions.csv.gz</code>, by three functions: <code>read.csv</code> in base R, <code>read_csv</code> in tidyverse, and <code>fread</code> in the data.table package.</p>
-<p>Which function is fastest? Is there difference in the (default) parsed data types? How much memory does each resultant dataframe or tibble use? (Hint: <code>system.time</code> measures run times; <code>pryr::object_size</code> measures memory usage; all these readers can take gz file as input without explicit decompression.)</p>
+<p>Which function is fastest? Is there difference in the (default) parsed data types? How much memory does each resultant dataframe or tibble use? (Hint: <code>system.time</code> measures run times; <code>pryr::object_size</code> measures memory usage; all these readers can take gz file as input without explicit decompression.) <strong>Solution:</strong></p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="co">#!/bin/bash</span></span>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Define dataset path</span></span>
+<span id="cb35-4"><a href="#cb35-4" aria-hidden="true" tabindex="-1"></a><span class="va">MIMIC_PATH</span><span class="op">=</span>~/mimic/hosp/admissions.csv.gz</span>
+<span id="cb35-5"><a href="#cb35-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-6"><a href="#cb35-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Run R script to benchmark speed, data types, and memory usage</span></span>
+<span id="cb35-7"><a href="#cb35-7" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">&quot;Running R script...&quot;</span></span>
+<span id="cb35-8"><a href="#cb35-8" aria-hidden="true" tabindex="-1"></a><span class="ex">Rscript</span> <span class="at">-</span> <span class="op">&lt;&lt;EOF</span></span>
+<span id="cb35-9"><a href="#cb35-9" aria-hidden="true" tabindex="-1"></a><span class="st">library(tidyverse)</span></span>
+<span id="cb35-10"><a href="#cb35-10" aria-hidden="true" tabindex="-1"></a><span class="st">library(data.table)</span></span>
+<span id="cb35-11"><a href="#cb35-11" aria-hidden="true" tabindex="-1"></a><span class="st">library(pryr)</span></span>
+<span id="cb35-12"><a href="#cb35-12" aria-hidden="true" tabindex="-1"></a><span class="st">library(stringr)</span></span>
+<span id="cb35-13"><a href="#cb35-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-14"><a href="#cb35-14" aria-hidden="true" tabindex="-1"></a><span class="st">mimic_path &lt;- &quot;</span><span class="va">$MIMIC_PATH</span><span class="st">&quot;</span></span>
+<span id="cb35-15"><a href="#cb35-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-16"><a href="#cb35-16" aria-hidden="true" tabindex="-1"></a><span class="st"># Measure time and memory for read.csv (Base R)</span></span>
+<span id="cb35-17"><a href="#cb35-17" aria-hidden="true" tabindex="-1"></a><span class="st">time_r &lt;- system.time(tmp_r &lt;- read.csv(mimic_path))</span></span>
+<span id="cb35-18"><a href="#cb35-18" aria-hidden="true" tabindex="-1"></a><span class="st">size_r &lt;- object_size(tmp_r)</span></span>
+<span id="cb35-19"><a href="#cb35-19" aria-hidden="true" tabindex="-1"></a><span class="st">str_r &lt;- capture.output(str(tmp_r))</span></span>
+<span id="cb35-20"><a href="#cb35-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-21"><a href="#cb35-21" aria-hidden="true" tabindex="-1"></a><span class="st"># Measure time and memory for read_csv (Tidyverse)</span></span>
+<span id="cb35-22"><a href="#cb35-22" aria-hidden="true" tabindex="-1"></a><span class="st">time_t &lt;- system.time(tmp_t &lt;- read_csv(mimic_path))</span></span>
+<span id="cb35-23"><a href="#cb35-23" aria-hidden="true" tabindex="-1"></a><span class="st">size_t &lt;- object_size(tmp_t)</span></span>
+<span id="cb35-24"><a href="#cb35-24" aria-hidden="true" tabindex="-1"></a><span class="st">str_t &lt;- capture.output(str(tmp_t))</span></span>
+<span id="cb35-25"><a href="#cb35-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-26"><a href="#cb35-26" aria-hidden="true" tabindex="-1"></a><span class="st"># Measure time and memory for fread (data.table)</span></span>
+<span id="cb35-27"><a href="#cb35-27" aria-hidden="true" tabindex="-1"></a><span class="st">time_f &lt;- system.time(tmp_f &lt;- fread(mimic_path))</span></span>
+<span id="cb35-28"><a href="#cb35-28" aria-hidden="true" tabindex="-1"></a><span class="st">size_f &lt;- object_size(tmp_f)</span></span>
+<span id="cb35-29"><a href="#cb35-29" aria-hidden="true" tabindex="-1"></a><span class="st">str_f &lt;- capture.output(str(tmp_f))</span></span>
+<span id="cb35-30"><a href="#cb35-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-31"><a href="#cb35-31" aria-hidden="true" tabindex="-1"></a><span class="st"># Save and print results</span></span>
+<span id="cb35-32"><a href="#cb35-32" aria-hidden="true" tabindex="-1"></a><span class="st">output_file &lt;- &quot;benchmark_results.txt&quot;</span></span>
+<span id="cb35-33"><a href="#cb35-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-34"><a href="#cb35-34" aria-hidden="true" tabindex="-1"></a><span class="st">results &lt;- c(</span></span>
+<span id="cb35-35"><a href="#cb35-35" aria-hidden="true" tabindex="-1"></a><span class="st">  &quot;Benchmark Results:&quot;,</span></span>
+<span id="cb35-36"><a href="#cb35-36" aria-hidden="true" tabindex="-1"></a><span class="st">  &quot;==================&quot;,</span></span>
+<span id="cb35-37"><a href="#cb35-37" aria-hidden="true" tabindex="-1"></a><span class="st">  sprintf(&quot;Base R (read.csv): Time = %f sec, Memory = %s bytes&quot;, time_r[3], size_r),</span></span>
+<span id="cb35-38"><a href="#cb35-38" aria-hidden="true" tabindex="-1"></a><span class="st">  sprintf(&quot;Tidyverse (read_csv): Time = %f sec, Memory = %s bytes&quot;, time_t[3], size_t),</span></span>
+<span id="cb35-39"><a href="#cb35-39" aria-hidden="true" tabindex="-1"></a><span class="st">  sprintf(&quot;Data.table (fread): Time = %f sec, Memory = %s bytes&quot;, time_f[3], size_f),</span></span>
+<span id="cb35-40"><a href="#cb35-40" aria-hidden="true" tabindex="-1"></a><span class="st">  &quot;</span><span class="dt">\n</span><span class="st">Default Parsed Data Types (str() output):&quot;,</span></span>
+<span id="cb35-41"><a href="#cb35-41" aria-hidden="true" tabindex="-1"></a><span class="st">  &quot;</span><span class="dt">\n</span><span class="st">Base R (read.csv):&quot;, str_r,</span></span>
+<span id="cb35-42"><a href="#cb35-42" aria-hidden="true" tabindex="-1"></a><span class="st">  &quot;</span><span class="dt">\n</span><span class="st">Tidyverse (read_csv):&quot;, str_t,</span></span>
+<span id="cb35-43"><a href="#cb35-43" aria-hidden="true" tabindex="-1"></a><span class="st">  &quot;</span><span class="dt">\n</span><span class="st">Data.table (fread):&quot;, str_f</span></span>
+<span id="cb35-44"><a href="#cb35-44" aria-hidden="true" tabindex="-1"></a><span class="st">)</span></span>
+<span id="cb35-45"><a href="#cb35-45" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-46"><a href="#cb35-46" aria-hidden="true" tabindex="-1"></a><span class="st">writeLines(results, con = output_file)</span></span>
+<span id="cb35-47"><a href="#cb35-47" aria-hidden="true" tabindex="-1"></a><span class="st">cat(paste(results, collapse = &quot;</span><span class="dt">\n</span><span class="st">&quot;), &quot;</span><span class="dt">\n</span><span class="st">&quot;)</span></span>
+<span id="cb35-48"><a href="#cb35-48" aria-hidden="true" tabindex="-1"></a><span class="op">EOF</span></span>
+<span id="cb35-49"><a href="#cb35-49" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-50"><a href="#cb35-50" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">&quot;Benchmarking complete! Results saved in &#39;benchmark_results.txt&#39;.&quot;</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Running R script...
+── Attaching core tidyverse packages ──────────────────────── tidyverse 2.0.0 ──
+✔ dplyr     1.1.4     ✔ readr     2.1.5
+✔ forcats   1.0.0     ✔ stringr   1.5.1
+✔ ggplot2   3.5.1     ✔ tibble    3.2.1
+✔ lubridate 1.9.4     ✔ tidyr     1.3.1
+✔ purrr     1.0.2     
+── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
+✖ dplyr::filter() masks stats::filter()
+✖ dplyr::lag()    masks stats::lag()
+ℹ Use the conflicted package (&lt;http://conflicted.r-lib.org/&gt;) to force all conflicts to become errors
+
+Attaching package: ‘data.table’
+
+The following objects are masked from ‘package:lubridate’:
+
+    hour, isoweek, mday, minute, month, quarter, second, wday, week,
+    yday, year
+
+The following objects are masked from ‘package:dplyr’:
+
+    between, first, last
+
+The following object is masked from ‘package:purrr’:
+
+    transpose
+
+
+Attaching package: ‘pryr’
+
+The following object is masked from ‘package:data.table’:
+
+    address
+
+The following object is masked from ‘package:dplyr’:
+
+    where
+
+The following objects are masked from ‘package:purrr’:
+
+    compose, partial
+
+Rows: 546028 Columns: 16
+── Column specification ────────────────────────────────────────────────────────
+Delimiter: &quot;,&quot;
+chr  (8): admission_type, admit_provider_id, admission_location, discharge_l...
+dbl  (3): subject_id, hadm_id, hospital_expire_flag
+dttm (5): admittime, dischtime, deathtime, edregtime, edouttime
+
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+Benchmark Results:
+==================
+Base R (read.csv): Time = 14.175000 sec, Memory = 200098832 bytes
+Tidyverse (read_csv): Time = 2.163000 sec, Memory = 70022592 bytes
+Data.table (fread): Time = 1.926000 sec, Memory = 63465008 bytes
+
+Default Parsed Data Types (str() output):
+
+Base R (read.csv):
+&#39;data.frame&#39;:   546028 obs. of  16 variables:
+ $ subject_id          : int  10000032 10000032 10000032 10000032 10000068 10000084 10000084 10000108 10000117 10000117 ...
+ $ hadm_id             : int  22595853 22841357 25742920 29079034 25022803 23052089 29888819 27250926 22927623 27988844 ...
+ $ admittime           : chr  &quot;2180-05-06 22:23:00&quot; &quot;2180-06-26 18:27:00&quot; &quot;2180-08-05 23:44:00&quot; &quot;2180-07-23 12:35:00&quot; ...
+ $ dischtime           : chr  &quot;2180-05-07 17:15:00&quot; &quot;2180-06-27 18:49:00&quot; &quot;2180-08-07 17:50:00&quot; &quot;2180-07-25 17:55:00&quot; ...
+ $ deathtime           : chr  &quot;&quot; &quot;&quot; &quot;&quot; &quot;&quot; ...
+ $ admission_type      : chr  &quot;URGENT&quot; &quot;EW EMER.&quot; &quot;EW EMER.&quot; &quot;EW EMER.&quot; ...
+ $ admit_provider_id   : chr  &quot;P49AFC&quot; &quot;P784FA&quot; &quot;P19UTS&quot; &quot;P06OTX&quot; ...
+ $ admission_location  : chr  &quot;TRANSFER FROM HOSPITAL&quot; &quot;EMERGENCY ROOM&quot; &quot;EMERGENCY ROOM&quot; &quot;EMERGENCY ROOM&quot; ...
+ $ discharge_location  : chr  &quot;HOME&quot; &quot;HOME&quot; &quot;HOSPICE&quot; &quot;HOME&quot; ...
+ $ insurance           : chr  &quot;Medicaid&quot; &quot;Medicaid&quot; &quot;Medicaid&quot; &quot;Medicaid&quot; ...
+ $ language            : chr  &quot;English&quot; &quot;English&quot; &quot;English&quot; &quot;English&quot; ...
+ $ marital_status      : chr  &quot;WIDOWED&quot; &quot;WIDOWED&quot; &quot;WIDOWED&quot; &quot;WIDOWED&quot; ...
+ $ race                : chr  &quot;WHITE&quot; &quot;WHITE&quot; &quot;WHITE&quot; &quot;WHITE&quot; ...
+ $ edregtime           : chr  &quot;2180-05-06 19:17:00&quot; &quot;2180-06-26 15:54:00&quot; &quot;2180-08-05 20:58:00&quot; &quot;2180-07-23 05:54:00&quot; ...
+ $ edouttime           : chr  &quot;2180-05-06 23:30:00&quot; &quot;2180-06-26 21:31:00&quot; &quot;2180-08-06 01:44:00&quot; &quot;2180-07-23 14:00:00&quot; ...
+ $ hospital_expire_flag: int  0 0 0 0 0 0 0 0 0 0 ...
+
+Tidyverse (read_csv):
+spc_tbl_ [546,028 × 16] (S3: spec_tbl_df/tbl_df/tbl/data.frame)
+ $ subject_id          : num [1:546028] 1e+07 1e+07 1e+07 1e+07 1e+07 ...
+ $ hadm_id             : num [1:546028] 22595853 22841357 25742920 29079034 25022803 ...
+ $ admittime           : POSIXct[1:546028], format: &quot;2180-05-06 22:23:00&quot; &quot;2180-06-26 18:27:00&quot; ...
+ $ dischtime           : POSIXct[1:546028], format: &quot;2180-05-07 17:15:00&quot; &quot;2180-06-27 18:49:00&quot; ...
+ $ deathtime           : POSIXct[1:546028], format: NA NA ...
+ $ admission_type      : chr [1:546028] &quot;URGENT&quot; &quot;EW EMER.&quot; &quot;EW EMER.&quot; &quot;EW EMER.&quot; ...
+ $ admit_provider_id   : chr [1:546028] &quot;P49AFC&quot; &quot;P784FA&quot; &quot;P19UTS&quot; &quot;P06OTX&quot; ...
+ $ admission_location  : chr [1:546028] &quot;TRANSFER FROM HOSPITAL&quot; &quot;EMERGENCY ROOM&quot; &quot;EMERGENCY ROOM&quot; &quot;EMERGENCY ROOM&quot; ...
+ $ discharge_location  : chr [1:546028] &quot;HOME&quot; &quot;HOME&quot; &quot;HOSPICE&quot; &quot;HOME&quot; ...
+ $ insurance           : chr [1:546028] &quot;Medicaid&quot; &quot;Medicaid&quot; &quot;Medicaid&quot; &quot;Medicaid&quot; ...
+ $ language            : chr [1:546028] &quot;English&quot; &quot;English&quot; &quot;English&quot; &quot;English&quot; ...
+ $ marital_status      : chr [1:546028] &quot;WIDOWED&quot; &quot;WIDOWED&quot; &quot;WIDOWED&quot; &quot;WIDOWED&quot; ...
+ $ race                : chr [1:546028] &quot;WHITE&quot; &quot;WHITE&quot; &quot;WHITE&quot; &quot;WHITE&quot; ...
+ $ edregtime           : POSIXct[1:546028], format: &quot;2180-05-06 19:17:00&quot; &quot;2180-06-26 15:54:00&quot; ...
+ $ edouttime           : POSIXct[1:546028], format: &quot;2180-05-06 23:30:00&quot; &quot;2180-06-26 21:31:00&quot; ...
+ $ hospital_expire_flag: num [1:546028] 0 0 0 0 0 0 0 0 0 0 ...
+ - attr(*, &quot;spec&quot;)=
+  .. cols(
+  ..   subject_id = col_double(),
+  ..   hadm_id = col_double(),
+  ..   admittime = col_datetime(format = &quot;&quot;),
+  ..   dischtime = col_datetime(format = &quot;&quot;),
+  ..   deathtime = col_datetime(format = &quot;&quot;),
+  ..   admission_type = col_character(),
+  ..   admit_provider_id = col_character(),
+  ..   admission_location = col_character(),
+  ..   discharge_location = col_character(),
+  ..   insurance = col_character(),
+  ..   language = col_character(),
+  ..   marital_status = col_character(),
+  ..   race = col_character(),
+  ..   edregtime = col_datetime(format = &quot;&quot;),
+  ..   edouttime = col_datetime(format = &quot;&quot;),
+  ..   hospital_expire_flag = col_double()
+  .. )
+ - attr(*, &quot;problems&quot;)=&lt;externalptr&gt; 
+
+Data.table (fread):
+Classes ‘data.table’ and &#39;data.frame&#39;:  546028 obs. of  16 variables:
+ $ subject_id          : int  10000032 10000032 10000032 10000032 10000068 10000084 10000084 10000108 10000117 10000117 ...
+ $ hadm_id             : int  22595853 22841357 25742920 29079034 25022803 23052089 29888819 27250926 22927623 27988844 ...
+ $ admittime           : POSIXct, format: &quot;2180-05-06 22:23:00&quot; &quot;2180-06-26 18:27:00&quot; ...
+ $ dischtime           : POSIXct, format: &quot;2180-05-07 17:15:00&quot; &quot;2180-06-27 18:49:00&quot; ...
+ $ deathtime           : POSIXct, format: NA NA ...
+ $ admission_type      : chr  &quot;URGENT&quot; &quot;EW EMER.&quot; &quot;EW EMER.&quot; &quot;EW EMER.&quot; ...
+ $ admit_provider_id   : chr  &quot;P49AFC&quot; &quot;P784FA&quot; &quot;P19UTS&quot; &quot;P06OTX&quot; ...
+ $ admission_location  : chr  &quot;TRANSFER FROM HOSPITAL&quot; &quot;EMERGENCY ROOM&quot; &quot;EMERGENCY ROOM&quot; &quot;EMERGENCY ROOM&quot; ...
+ $ discharge_location  : chr  &quot;HOME&quot; &quot;HOME&quot; &quot;HOSPICE&quot; &quot;HOME&quot; ...
+ $ insurance           : chr  &quot;Medicaid&quot; &quot;Medicaid&quot; &quot;Medicaid&quot; &quot;Medicaid&quot; ...
+ $ language            : chr  &quot;English&quot; &quot;English&quot; &quot;English&quot; &quot;English&quot; ...
+ $ marital_status      : chr  &quot;WIDOWED&quot; &quot;WIDOWED&quot; &quot;WIDOWED&quot; &quot;WIDOWED&quot; ...
+ $ race                : chr  &quot;WHITE&quot; &quot;WHITE&quot; &quot;WHITE&quot; &quot;WHITE&quot; ...
+ $ edregtime           : POSIXct, format: &quot;2180-05-06 19:17:00&quot; &quot;2180-06-26 15:54:00&quot; ...
+ $ edouttime           : POSIXct, format: &quot;2180-05-06 23:30:00&quot; &quot;2180-06-26 21:31:00&quot; ...
+ $ hospital_expire_flag: int  0 0 0 0 0 0 0 0 0 0 ...
+ - attr(*, &quot;.internal.selfref&quot;)=&lt;externalptr&gt;  
+Benchmarking complete! Results saved in &#39;benchmark_results.txt&#39;.</code></pre>
 </div>
+</div>
+<p>Based on the results above, we can see that read_csv in Tidyverse is the fastest while read.csv is the slowest, and there is difference in the default parsed data types. The memory taken up each resultant dataframe or tibble use are 200098832, 70022592, and 63465008 respectively.</p>
 </section>
 <section id="q1.2-user-supplied-data-types" class="level3">
 <h3 class="anchored" data-anchor-id="q1.2-user-supplied-data-types">Q1.2 User-supplied data types</h3>
@@ -3362,14 +3551,14 @@ Freeram:   14.330 GiB </code></pre>
 </p>
 <p>Let us focus on a bigger file, <code>labevents.csv.gz</code>, which is about 130x bigger than <code>admissions.csv.gz</code>.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb36"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ls</span> <span class="at">-l</span> ~/mimic/hosp/labevents.csv.gz</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb37"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ls</span> <span class="at">-l</span> ~/mimic/hosp/labevents.csv.gz</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>-rwxrwxrwx 1 zxhyu zxhyu 2592909134 Jan 21 23:41 /home/zxhyu/mimic/hosp/labevents.csv.gz</code></pre>
 </div>
 </div>
 <p>Display the first 10 lines of this file.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb38"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="fu">zcat</span> <span class="op">&lt;</span> ~/mimic/hosp/labevents.csv.gz <span class="kw">|</span> <span class="fu">head</span> <span class="at">-10</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb39"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="fu">zcat</span> <span class="op">&lt;</span> ~/mimic/hosp/labevents.csv.gz <span class="kw">|</span> <span class="fu">head</span> <span class="at">-10</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>labevent_id,subject_id,hadm_id,specimen_id,itemid,order_provider_id,charttime,storetime,value,valuenum,valueuom,ref_range_lower,ref_range_upper,flag,priority,comments
 1,10000032,,2704548,50931,P69FQC,2180-03-23 11:51:00,2180-03-23 15:56:00,___,95,mg/dL,70,100,,ROUTINE,&quot;IF FASTING, 70-100 NORMAL, &gt;125 PROVISIONAL DIABETES.&quot;
@@ -3433,7 +3622,7 @@ Freeram:   14.330 GiB </code></pre>
 <h2 class="anchored" data-anchor-id="q3.-ingest-and-filter-chartevents.csv.gz">Q3. Ingest and filter <code>chartevents.csv.gz</code></h2>
 <p><a href="https://mimic.mit.edu/docs/iv/modules/icu/chartevents/"><code>chartevents.csv.gz</code></a> contains all the charted data available for a patient. During their ICU stay, the primary repository of a patient’s information is their electronic chart. The <code>itemid</code> variable indicates a single measurement type in the database. The <code>value</code> variable is the value measured for <code>itemid</code>. The first 10 lines of <code>chartevents.csv.gz</code> are</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb40"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a><span class="fu">zcat</span> <span class="op">&lt;</span> ~/mimic/icu/chartevents.csv.gz <span class="kw">|</span> <span class="fu">head</span> <span class="at">-10</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb41"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a><span class="fu">zcat</span> <span class="op">&lt;</span> ~/mimic/icu/chartevents.csv.gz <span class="kw">|</span> <span class="fu">head</span> <span class="at">-10</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>subject_id,hadm_id,stay_id,caregiver_id,charttime,storetime,itemid,value,valuenum,valueuom,warning
 10000032,29079034,39553978,18704,2180-07-23 12:36:00,2180-07-23 14:45:00,226512,39.4,39.4,kg,0
@@ -3449,11 +3638,11 @@ Freeram:   14.330 GiB </code></pre>
 </div>
 <p>How many rows? 433 millions.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb42"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a><span class="fu">zcat</span> <span class="op">&lt;</span> ~/mimic/icu/chartevents.csv.gz <span class="kw">|</span> <span class="fu">tail</span> <span class="at">-n</span> +2 <span class="kw">|</span> <span class="fu">wc</span> <span class="at">-l</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb43"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a><span class="fu">zcat</span> <span class="op">&lt;</span> ~/mimic/icu/chartevents.csv.gz <span class="kw">|</span> <span class="fu">tail</span> <span class="at">-n</span> +2 <span class="kw">|</span> <span class="fu">wc</span> <span class="at">-l</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p><a href="https://mimic.mit.edu/docs/iv/modules/icu/d_items/"><code>d_items.csv.gz</code></a> is the dictionary for the <code>itemid</code> in <code>chartevents.csv.gz</code>.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb43"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a><span class="fu">zcat</span> <span class="op">&lt;</span> ~/mimic/icu/d_items.csv.gz <span class="kw">|</span> <span class="fu">head</span> <span class="at">-10</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb44"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a><span class="fu">zcat</span> <span class="op">&lt;</span> ~/mimic/icu/d_items.csv.gz <span class="kw">|</span> <span class="fu">head</span> <span class="at">-10</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>itemid,label,abbreviation,linksto,category,unitname,param_type,lownormalvalue,highnormalvalue
 220001,Problem List,Problem List,chartevents,General,,Text,,

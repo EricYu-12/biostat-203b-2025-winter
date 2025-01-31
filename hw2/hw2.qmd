@@ -31,7 +31,7 @@ library(memuse)
 library(pryr)
 library(R.utils)
 library(tidyverse)
-library(readr)
+library(stringr)
 ```
 
 Display memory information of your computer
@@ -58,9 +58,60 @@ ls -l ~/mimic/icu/
 There are quite a few utilities in R for reading plain text data files. Let us test the speed of reading a moderate sized compressed csv file, `admissions.csv.gz`, by three functions: `read.csv` in base R, `read_csv` in tidyverse, and `fread` in the data.table package.
 
 Which function is fastest? Is there difference in the (default) parsed data types? How much memory does each resultant dataframe or tibble use? (Hint: `system.time` measures run times; `pryr::object_size` measures memory usage; all these readers can take gz file as input without explicit decompression.) 
+**Solution:**
 ```{bash}
+#!/bin/bash
 
+# Define dataset path
+MIMIC_PATH=~/mimic/hosp/admissions.csv.gz
+
+# Run R script to benchmark speed, data types, and memory usage
+echo "Running R script..."
+Rscript - <<EOF
+library(tidyverse)
+library(data.table)
+library(pryr)
+library(stringr)
+
+mimic_path <- "$MIMIC_PATH"
+
+# Measure time and memory for read.csv (Base R)
+time_r <- system.time(tmp_r <- read.csv(mimic_path))
+size_r <- object_size(tmp_r)
+str_r <- capture.output(str(tmp_r))
+
+# Measure time and memory for read_csv (Tidyverse)
+time_t <- system.time(tmp_t <- read_csv(mimic_path))
+size_t <- object_size(tmp_t)
+str_t <- capture.output(str(tmp_t))
+
+# Measure time and memory for fread (data.table)
+time_f <- system.time(tmp_f <- fread(mimic_path))
+size_f <- object_size(tmp_f)
+str_f <- capture.output(str(tmp_f))
+
+# Save and print results
+output_file <- "benchmark_results.txt"
+
+results <- c(
+  "Benchmark Results:",
+  "==================",
+  sprintf("Base R (read.csv): Time = %f sec, Memory = %s bytes", time_r[3], size_r),
+  sprintf("Tidyverse (read_csv): Time = %f sec, Memory = %s bytes", time_t[3], size_t),
+  sprintf("Data.table (fread): Time = %f sec, Memory = %s bytes", time_f[3], size_f),
+  "\nDefault Parsed Data Types (str() output):",
+  "\nBase R (read.csv):", str_r,
+  "\nTidyverse (read_csv):", str_t,
+  "\nData.table (fread):", str_f
+)
+
+writeLines(results, con = output_file)
+cat(paste(results, collapse = "\n"), "\n")
+EOF
+
+echo "Benchmarking complete! Results saved in 'benchmark_results.txt'."
 ```
+Based on the results above, we can see that read_csv in Tidyverse is the fastest while read.csv is the slowest, and there is difference in the default parsed data types. The memory taken up each resultant dataframe or tibble use are 200098832, 70022592, and 63465008 respectively.
 
 ### Q1.2 User-supplied data types
 
