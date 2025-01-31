@@ -3167,6 +3167,7 @@ loaded via a namespace (and not attached):
 [13] digest_0.6.37     rlang_1.1.4       evaluate_1.0.3   </code></pre>
 </div>
 </div>
+<p>getOption(“pkgType”)</p>
 <p>Load necessary libraries (you can add more as needed).</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(arrow)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -3284,19 +3285,20 @@ Attaching package: &#39;R.utils&#39;</code></pre>
 ✖ lubridate::year()     masks data.table::year()
 ℹ Use the conflicted package (&lt;http://conflicted.r-lib.org/&gt;) to force all conflicts to become errors</code></pre>
 </div>
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(readr)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>Display memory information of your computer</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>memuse<span class="sc">::</span><span class="fu">Sys.meminfo</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>memuse<span class="sc">::</span><span class="fu">Sys.meminfo</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Totalram:  15.463 GiB 
-Freeram:   13.313 GiB </code></pre>
+Freeram:   14.330 GiB </code></pre>
 </div>
 </div>
 <p>In this exercise, we explore various tools for ingesting the <a href="https://physionet.org/content/mimiciv/3.1/">MIMIC-IV</a> data introduced in <a href="https://ucla-biostat-203b.github.io/2025winter/hw/hw1/hw1.html">homework 1</a>.</p>
 <p>Display the contents of MIMIC <code>hosp</code> and <code>icu</code> data folders:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ls</span> <span class="at">-l</span> ~/mimic/hosp/</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ls</span> <span class="at">-l</span> ~/mimic/hosp/</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>total 6153124
 -rwxrwxrwx 1 zxhyu zxhyu   19928140 Jan 21 23:40 admissions.csv.gz
@@ -3324,7 +3326,7 @@ Freeram:   13.313 GiB </code></pre>
 </div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ls</span> <span class="at">-l</span> ~/mimic/icu/</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb33"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ls</span> <span class="at">-l</span> ~/mimic/icu/</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>total 4253392
 -rwxrwxrwx 1 zxhyu zxhyu      41566 Jan 21 23:41 caregiver.csv.gz
@@ -3344,6 +3346,9 @@ Freeram:   13.313 GiB </code></pre>
 <h3 class="anchored" data-anchor-id="q1.1-speed-memory-and-data-types">Q1.1 Speed, memory, and data types</h3>
 <p>There are quite a few utilities in R for reading plain text data files. Let us test the speed of reading a moderate sized compressed csv file, <code>admissions.csv.gz</code>, by three functions: <code>read.csv</code> in base R, <code>read_csv</code> in tidyverse, and <code>fread</code> in the data.table package.</p>
 <p>Which function is fastest? Is there difference in the (default) parsed data types? How much memory does each resultant dataframe or tibble use? (Hint: <code>system.time</code> measures run times; <code>pryr::object_size</code> measures memory usage; all these readers can take gz file as input without explicit decompression.)</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
 </section>
 <section id="q1.2-user-supplied-data-types" class="level3">
 <h3 class="anchored" data-anchor-id="q1.2-user-supplied-data-types">Q1.2 User-supplied data types</h3>
@@ -3357,14 +3362,14 @@ Freeram:   13.313 GiB </code></pre>
 </p>
 <p>Let us focus on a bigger file, <code>labevents.csv.gz</code>, which is about 130x bigger than <code>admissions.csv.gz</code>.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ls</span> <span class="at">-l</span> ~/mimic/hosp/labevents.csv.gz</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb36"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ls</span> <span class="at">-l</span> ~/mimic/hosp/labevents.csv.gz</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>-rwxrwxrwx 1 zxhyu zxhyu 2592909134 Jan 21 23:41 /home/zxhyu/mimic/hosp/labevents.csv.gz</code></pre>
 </div>
 </div>
 <p>Display the first 10 lines of this file.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb36"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="fu">zcat</span> <span class="op">&lt;</span> ~/mimic/hosp/labevents.csv.gz <span class="kw">|</span> <span class="fu">head</span> <span class="at">-10</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb38"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="fu">zcat</span> <span class="op">&lt;</span> ~/mimic/hosp/labevents.csv.gz <span class="kw">|</span> <span class="fu">head</span> <span class="at">-10</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>labevent_id,subject_id,hadm_id,specimen_id,itemid,order_provider_id,charttime,storetime,value,valuenum,valueuom,ref_range_lower,ref_range_upper,flag,priority,comments
 1,10000032,,2704548,50931,P69FQC,2180-03-23 11:51:00,2180-03-23 15:56:00,___,95,mg/dL,70,100,,ROUTINE,&quot;IF FASTING, 70-100 NORMAL, &gt;125 PROVISIONAL DIABETES.&quot;
@@ -3428,7 +3433,7 @@ Freeram:   13.313 GiB </code></pre>
 <h2 class="anchored" data-anchor-id="q3.-ingest-and-filter-chartevents.csv.gz">Q3. Ingest and filter <code>chartevents.csv.gz</code></h2>
 <p><a href="https://mimic.mit.edu/docs/iv/modules/icu/chartevents/"><code>chartevents.csv.gz</code></a> contains all the charted data available for a patient. During their ICU stay, the primary repository of a patient’s information is their electronic chart. The <code>itemid</code> variable indicates a single measurement type in the database. The <code>value</code> variable is the value measured for <code>itemid</code>. The first 10 lines of <code>chartevents.csv.gz</code> are</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb38"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="fu">zcat</span> <span class="op">&lt;</span> ~/mimic/icu/chartevents.csv.gz <span class="kw">|</span> <span class="fu">head</span> <span class="at">-10</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb40"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a><span class="fu">zcat</span> <span class="op">&lt;</span> ~/mimic/icu/chartevents.csv.gz <span class="kw">|</span> <span class="fu">head</span> <span class="at">-10</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>subject_id,hadm_id,stay_id,caregiver_id,charttime,storetime,itemid,value,valuenum,valueuom,warning
 10000032,29079034,39553978,18704,2180-07-23 12:36:00,2180-07-23 14:45:00,226512,39.4,39.4,kg,0
@@ -3444,11 +3449,11 @@ Freeram:   13.313 GiB </code></pre>
 </div>
 <p>How many rows? 433 millions.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb40"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a><span class="fu">zcat</span> <span class="op">&lt;</span> ~/mimic/icu/chartevents.csv.gz <span class="kw">|</span> <span class="fu">tail</span> <span class="at">-n</span> +2 <span class="kw">|</span> <span class="fu">wc</span> <span class="at">-l</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb42"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a><span class="fu">zcat</span> <span class="op">&lt;</span> ~/mimic/icu/chartevents.csv.gz <span class="kw">|</span> <span class="fu">tail</span> <span class="at">-n</span> +2 <span class="kw">|</span> <span class="fu">wc</span> <span class="at">-l</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p><a href="https://mimic.mit.edu/docs/iv/modules/icu/d_items/"><code>d_items.csv.gz</code></a> is the dictionary for the <code>itemid</code> in <code>chartevents.csv.gz</code>.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb41"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a><span class="fu">zcat</span> <span class="op">&lt;</span> ~/mimic/icu/d_items.csv.gz <span class="kw">|</span> <span class="fu">head</span> <span class="at">-10</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb43"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a><span class="fu">zcat</span> <span class="op">&lt;</span> ~/mimic/icu/d_items.csv.gz <span class="kw">|</span> <span class="fu">head</span> <span class="at">-10</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>itemid,label,abbreviation,linksto,category,unitname,param_type,lownormalvalue,highnormalvalue
 220001,Problem List,Problem List,chartevents,General,,Text,,

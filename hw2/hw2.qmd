@@ -19,6 +19,7 @@ Display machine information for reproducibility:
 ```{r}
 sessionInfo()
 ```
+getOption("pkgType")
 
 
 Load necessary libraries (you can add more as needed).
@@ -30,6 +31,7 @@ library(memuse)
 library(pryr)
 library(R.utils)
 library(tidyverse)
+library(readr)
 ```
 
 Display memory information of your computer
@@ -56,6 +58,9 @@ ls -l ~/mimic/icu/
 There are quite a few utilities in R for reading plain text data files. Let us test the speed of reading a moderate sized compressed csv file, `admissions.csv.gz`, by three functions: `read.csv` in base R, `read_csv` in tidyverse, and `fread` in the data.table package.
 
 Which function is fastest? Is there difference in the (default) parsed data types? How much memory does each resultant dataframe or tibble use? (Hint: `system.time` measures run times; `pryr::object_size` measures memory usage; all these readers can take gz file as input without explicit decompression.) 
+```{bash}
+
+```
 
 ### Q1.2 User-supplied data types
 
