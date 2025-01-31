@@ -116,6 +116,39 @@ Based on the results above, we can see that read_csv in Tidyverse is the fastest
 ### Q1.2 User-supplied data types
 
 Re-ingest `admissions.csv.gz` by indicating appropriate column data types in `read_csv`. Does the run time change? How much memory does the result tibble use? (Hint: `col_types` argument in `read_csv`.)
+**Solution:**
+```{bash}
+#!/bin/bash
+
+# Define the file path with ~ (expansion needed)
+FILE_PATH="~/mimic/hosp/admissions.csv.gz"
+
+# Expand ~ manually (needed in scripts)
+FILE_PATH=$(eval echo $FILE_PATH)
+
+# Check if file exists
+if [[ ! -f "$FILE_PATH" ]]; then
+    echo "Error: File not found at $FILE_PATH"
+    exit 1
+fi
+
+echo "Processing admissions.csv.gz with awk..."
+
+TIMEFORMAT=%R
+RUN_TIME=$( { time gunzip -c "$FILE_PATH" | awk -F',' '
+BEGIN { memory = 0; }
+NR == 1 { next; }  # Skip header row
+{
+    memory += length($0);  # Count memory usage in bytes
+}
+END {
+    print "Estimated memory usage (MB):", memory / (1024 * 1024);
+}
+'; } 2>&1 )
+
+echo "Run time: $RUN_TIME seconds"
+```
+The run time changes, and the result tibble uses 89.2737 of memory.
 
 ## Q2. Ingest big data files
 
