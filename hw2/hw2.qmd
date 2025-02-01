@@ -187,110 +187,64 @@ zcat < ~/mimic/hosp/labevents.csv.gz | head -10
 </p>
 
 Try to ingest `labevents.csv.gz` using `read_csv`. What happens? If it takes more than 3 minutes on your computer, then abort the program and report your findings.
-
-```{bash}
+**Solution:**
+```{r}
 #| eval: false
-#!/bin/bash
-
-# Define the file path
-FILE_PATH="~/mimic/hosp/labevents.csv.gz"
-
-# Expand ~ correctly
-FILE_PATH=$(eval echo $FILE_PATH)
-
-# Check if file exists
-if [[ ! -f "$FILE_PATH" ]]; then
-    echo "Error: File not found at $FILE_PATH"
-    exit 1
-fi
-
-echo "Attempting to read labevents.csv.gz..."
-
-# Start timing
-START_TIME=$(date +%s)
-
-# Run R script without forcing stop
-Rscript -e "
-library(readr)
-
+# Set a timer to monitor the performance
 start_time <- Sys.time()
 
-# Read the file
-df <- read_csv('$FILE_PATH', progress = TRUE)
-
-# Calculate elapsed time
-elapsed_time <- difftime(Sys.time(), start_time, units = 'secs')
-cat('File successfully ingested in', round(elapsed_time, 2), 'seconds.\n')
-
-# Calculate memory usage
-memory_used <- sum(sapply(df, object.size)) / (1024 * 1024)
-cat('Estimated memory usage:', round(memory_used, 2), 'MB\n')
-"
-
-# End timing
-END_TIME=$(date +%s)
-ELAPSED_TIME=$((END_TIME - START_TIME))
-
-echo "Total execution time: $ELAPSED_TIME seconds."
+# Use tryCatch to handle interruptions
+result <- tryCatch({
+  df_readr <- read_csv("~/mimic/hosp/labevents.csv.gz")
+  end_time <- Sys.time()
+  
+  # Calculate duration
+  duration <- as.numeric(difftime(end_time, start_time, units = "secs"))
+  
+  cat("Ingestion completed in", duration, "seconds.\n")
+  cat("Data dimensions:", dim(df_readr), "\n")
+  
+  return(df_readr)
+}, error = function(e) {
+  cat("An error occurred:", e$message, "\n")
+  return(NULL)
+})
 ```
-
-![](Q2.1%20killed.png)
-
-As shown in the picture, my system terminated the process of ingestion because my laptop does not have enough memory (RAM) to ingest the large labevents.cvs file.
+My system did not finish the process of ingestion in 3 minutes because my laptop does not have enough memory (RAM) to ingest the large labevents.cvs file.
 
 ### Q2.2 Ingest selected columns of `labevents.csv.gz` by `read_csv`
 
 Try to ingest only columns `subject_id`, `itemid`, `charttime`, and `valuenum` in `labevents.csv.gz` using `read_csv`. Does this solve the ingestion issue? (Hint: `col_select` argument in `read_csv`.)
-
-```{bash}
+**Solution:**
+```{r}
 #| eval: false
-#!/bin/bash
-
-# Define the file path
-FILE_PATH="~/mimic/hosp/labevents.csv.gz"
-
-# Expand ~ correctly
-FILE_PATH=$(eval echo $FILE_PATH)
-
-# Check if the file exists
-if [[ ! -f "$FILE_PATH" ]]; then
-    echo "Error: File not found at $FILE_PATH"
-    exit 1
-fi
-
-echo "Attempting to read selected columns from labevents.csv.gz..."
-
-# Start timing
-START_TIME=$(date +%s)
-
-# Use R to read only selected columns
-Rscript -e "
-library(readr)
-
+# Measure the time for ingestion
 start_time <- Sys.time()
 
-# Read only specific columns
-df <- read_csv('$FILE_PATH', col_select = c(subject_id, itemid, charttime, valuenum), progress = TRUE)
-
-# Calculate elapsed time
-elapsed_time <- difftime(Sys.time(), start_time, units = 'secs')
-cat('File successfully ingested in', round(elapsed_time, 2), 'seconds.\n')
-
-# Calculate memory usage
-memory_used <- sum(sapply(df, object.size)) / (1024 * 1024)
-cat('Estimated memory usage:', round(memory_used, 2), 'MB\n')
-"
-
-# End timing
-END_TIME=$(date +%s)
-ELAPSED_TIME=$((END_TIME - START_TIME))
-
-echo "Total execution time: $ELAPSED_TIME seconds."
+# Use tryCatch to handle any potential errors
+result <- tryCatch({
+  # Ingest only selected columns
+  df_selected <- read_csv(
+    "~/mimic/hosp/labevents.csv.gz",
+    col_select = c(subject_id, itemid, charttime, valuenum)
+  )
+  
+  end_time <- Sys.time()
+  
+  # Calculate duration
+  duration <- as.numeric(difftime(end_time, start_time, units = "secs"))
+  
+  # Display performance and data information
+  cat("Ingestion completed in", duration, "seconds.\n")
+  cat("Data dimensions:", dim(df_selected), "\n")
+  
+  return(df_selected)
+}, error = function(e) {
+  cat("An error occurred:", e$message, "\n")
+  return(NULL)
+})
 ```
-
-![](Q2.2 killed.png)
-
-As shown in the picture, my program is forced to terminate again since my laptop still does not have enough RAM to ingest the data.
+My program is forced to terminate again since my laptop still does not have enough RAM to ingest the data even just trying to ingest some specific columns.
 
 ### Q2.3 Ingest a subset of `labevents.csv.gz`
 
@@ -350,6 +304,30 @@ Our second strategy is to use [Apache Arrow](https://arrow.apache.org/) for larg
 Then use [`arrow::open_dataset`](https://arrow.apache.org/docs/r/reference/open_dataset.html) to ingest `labevents.csv`, select columns, and filter `itemid` as in Q2.3. How long does the ingest+select+filter process take? Display the number of rows and the first 10 rows of the result tibble, and make sure they match those in Q2.3. (Hint: use `dplyr` verbs for selecting columns and filtering rows.)
 
 Write a few sentences to explain what is Apache Arrow. Imagine you want to explain it to a layman in an elevator.
+**Solution:**
+```{r}
+#| eval: false
+system("gunzip -k ~/mimic/hosp/labevents.csv.gz")  
+```
+
+```{r}
+# Measure time
+time_arrow <- system.time({
+  # Open the CSV with Arrow, specify format explicitly
+  dataset <- open_dataset("~/mimic/hosp/labevents.csv", format = "csv")
+  
+  # Process data in batches
+  result_tibble <- dataset %>%
+    select(subject_id, itemid, value, flag) %>%
+    filter(itemid %in% c(50868, 50902, 50912)) %>%
+    collect()  # Collect only filtered data into memory
+})
+
+# Display results
+cat("Number of Rows:", nrow(result_tibble), "\n")
+print(head(result_tibble, 10))
+print(time_arrow)
+```
 
 ### Q2.5 Compress `labevents.csv` to Parquet format and ingest/select/filter
 
