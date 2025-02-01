@@ -311,7 +311,6 @@ system("gunzip -k ~/mimic/hosp/labevents.csv.gz")
 ```
 
 ```{r}
-# Measure time
 time_arrow <- system.time({
   # Open the CSV with Arrow, specify format explicitly
   dataset <- open_dataset("~/mimic/hosp/labevents.csv", format = "csv")
