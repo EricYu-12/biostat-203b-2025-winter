@@ -172,10 +172,102 @@ zcat < ~/mimic/hosp/labevents.csv.gz | head -10
 </p>
 
 Try to ingest `labevents.csv.gz` using `read_csv`. What happens? If it takes more than 3 minutes on your computer, then abort the program and report your findings. 
+```{bash}
+#| eval: false
+#!/bin/bash
+
+# Define the file path
+FILE_PATH="~/mimic/hosp/labevents.csv.gz"
+
+# Expand ~ correctly
+FILE_PATH=$(eval echo $FILE_PATH)
+
+# Check if file exists
+if [[ ! -f "$FILE_PATH" ]]; then
+    echo "Error: File not found at $FILE_PATH"
+    exit 1
+fi
+
+echo "Attempting to read labevents.csv.gz..."
+
+# Start timing
+START_TIME=$(date +%s)
+
+# Run R script without forcing stop
+Rscript -e "
+library(readr)
+
+start_time <- Sys.time()
+
+# Read the file
+df <- read_csv('$FILE_PATH', progress = TRUE)
+
+# Calculate elapsed time
+elapsed_time <- difftime(Sys.time(), start_time, units = 'secs')
+cat('File successfully ingested in', round(elapsed_time, 2), 'seconds.\n')
+
+# Calculate memory usage
+memory_used <- sum(sapply(df, object.size)) / (1024 * 1024)
+cat('Estimated memory usage:', round(memory_used, 2), 'MB\n')
+"
+
+# End timing
+END_TIME=$(date +%s)
+ELAPSED_TIME=$((END_TIME - START_TIME))
+
+echo "Total execution time: $ELAPSED_TIME seconds."
+```
+My system terminated the process of ingestion because my laptop does not have enough memory (RAM) to ingest the large labevents.cvs file.
 
 ### Q2.2 Ingest selected columns of `labevents.csv.gz` by `read_csv`
 
 Try to ingest only columns `subject_id`, `itemid`, `charttime`, and `valuenum` in `labevents.csv.gz` using `read_csv`.  Does this solve the ingestion issue? (Hint: `col_select` argument in `read_csv`.)
+```{bash}
+#| eval: false
+#!/bin/bash
+
+# Define the file path
+FILE_PATH="~/mimic/hosp/labevents.csv.gz"
+
+# Expand ~ correctly
+FILE_PATH=$(eval echo $FILE_PATH)
+
+# Check if the file exists
+if [[ ! -f "$FILE_PATH" ]]; then
+    echo "Error: File not found at $FILE_PATH"
+    exit 1
+fi
+
+echo "Attempting to read selected columns from labevents.csv.gz..."
+
+# Start timing
+START_TIME=$(date +%s)
+
+# Use R to read only selected columns
+Rscript -e "
+library(readr)
+
+start_time <- Sys.time()
+
+# Read only specific columns
+df <- read_csv('$FILE_PATH', col_select = c(subject_id, itemid, charttime, valuenum), progress = TRUE)
+
+# Calculate elapsed time
+elapsed_time <- difftime(Sys.time(), start_time, units = 'secs')
+cat('File successfully ingested in', round(elapsed_time, 2), 'seconds.\n')
+
+# Calculate memory usage
+memory_used <- sum(sapply(df, object.size)) / (1024 * 1024)
+cat('Estimated memory usage:', round(memory_used, 2), 'MB\n')
+"
+
+# End timing
+END_TIME=$(date +%s)
+ELAPSED_TIME=$((END_TIME - START_TIME))
+
+echo "Total execution time: $ELAPSED_TIME seconds."
+```
+My program is forcely terminated again since my laptop still does not have enough RAM to ingest the data.
 
 ### Q2.3 Ingest a subset of `labevents.csv.gz`
 
