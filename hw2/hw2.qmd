@@ -60,100 +60,103 @@ ls -l ~/mimic/icu/
 
 There are quite a few utilities in R for reading plain text data files. Let us test the speed of reading a moderate sized compressed csv file, `admissions.csv.gz`, by three functions: `read.csv` in base R, `read_csv` in tidyverse, and `fread` in the data.table package.
 
-Which function is fastest? Is there difference in the (default) parsed data types? How much memory does each resultant dataframe or tibble use? (Hint: `system.time` measures run times; `pryr::object_size` measures memory usage; all these readers can take gz file as input without explicit decompression.) **Solution:**
+Which function is fastest? Is there difference in the (default) parsed data types? How much memory does each resultant dataframe or tibble use? (Hint: `system.time` measures run times; `pryr::object_size` measures memory usage; all these readers can take gz file as input without explicit decompression.) 
+**Solution:**
+```{r}
+# File path
+file_path <- "~/mimic/hosp/admissions.csv.gz"
 
-```{bash}
-#!/bin/bash
+# Read with read.csv in base R
+time_read_csv_base <- system.time({
+  df_base <- read.csv(file_path)
+})
 
-# Define dataset path
-MIMIC_PATH=~/mimic/hosp/admissions.csv.gz
+# Read with read_csv in tidyverse 
+time_read_csv_tidyverse <- system.time({
+  df_tidyverse <- read_csv(file_path)
+})
 
-# Run R script to benchmark speed, data types, and memory usage
-echo "Running R script..."
-Rscript - <<EOF
-library(tidyverse)
-library(data.table)
-library(pryr)
-library(stringr)
+# Read with fread in data.table package
+time_fread_datatable <- system.time({
+  df_datatable <- fread(file_path)
+})
 
-mimic_path <- "$MIMIC_PATH"
+# Comparing Data Types
+cat("Base R Data Types:\n")
+str(df_base)
 
-# Measure time and memory for read.csv (Base R)
-time_r <- system.time(tmp_r <- read.csv(mimic_path))
-size_r <- object_size(tmp_r)
-str_r <- capture.output(str(tmp_r))
+cat("\nTidyverse Data Types:\n")
+str(df_tidyverse)
 
-# Measure time and memory for read_csv (Tidyverse)
-time_t <- system.time(tmp_t <- read_csv(mimic_path))
-size_t <- object_size(tmp_t)
-str_t <- capture.output(str(tmp_t))
+cat("\nData.table Data Types:\n")
+str(df_datatable)
 
-# Measure time and memory for fread (data.table)
-time_f <- system.time(tmp_f <- fread(mimic_path))
-size_f <- object_size(tmp_f)
-str_f <- capture.output(str(tmp_f))
+# Memory Usage by each method
+memory_base <- object_size(df_base)
+memory_tidyverse <- object_size(df_tidyverse)
+memory_datatable <- object_size(df_datatable)
 
-# Save and print results
-output_file <- "benchmark_results.txt"
-
-results <- c(
-  "Benchmark Results:",
-  "==================",
-  sprintf("Base R (read.csv): Time = %f sec, Memory = %s bytes", time_r[3], size_r),
-  sprintf("Tidyverse (read_csv): Time = %f sec, Memory = %s bytes", time_t[3], size_t),
-  sprintf("Data.table (fread): Time = %f sec, Memory = %s bytes", time_f[3], size_f),
-  "\nDefault Parsed Data Types (str() output):",
-  "\nBase R (read.csv):", str_r,
-  "\nTidyverse (read_csv):", str_t,
-  "\nData.table (fread):", str_f
+# Displaying Results
+results <- data.frame(
+  Method = c("read.csv (base R)", "read_csv (tidyverse)", "fread (data.table)"),
+  Time_in_seconds = c(time_read_csv_base["elapsed"], 
+                       time_read_csv_tidyverse["elapsed"], 
+                       time_fread_datatable["elapsed"]),
+  Memory_Usage_MB = c(as.numeric(memory_base) / (1024^2),
+                      as.numeric(memory_tidyverse) / (1024^2),
+                      as.numeric(memory_datatable) / (1024^2))
 )
 
-writeLines(results, con = output_file)
-cat(paste(results, collapse = "\n"), "\n")
-EOF
-
-echo "Benchmarking complete! Results saved in 'benchmark_results.txt'."
+print(results)
 ```
-
-Based on the results above, we can see that read_csv in Tidyverse is the fastest while read.csv is the slowest, and there is difference in the default parsed data types. The memory taken up each resultant dataframe or tibble use are 200098832, 70022592, and 63465008 respectively.
+As shown above, fread in the data.table package is the fastest while read.csv in base R is the slowest, and there is difference in the default parsed data types. The memory taken up each resultant dataframe or tibble use are also shown above.
 
 ### Q1.2 User-supplied data types
 
-Re-ingest `admissions.csv.gz` by indicating appropriate column data types in `read_csv`. Does the run time change? How much memory does the result tibble use? (Hint: `col_types` argument in `read_csv`.) **Solution:**
+Re-ingest `admissions.csv.gz` by indicating appropriate column data types in `read_csv`. Does the run time change? How much memory does the result tibble use? (Hint: `col_types` argument in `read_csv`.) 
+**Solution:**
+```{r}
+# File path
+file_path <- "~/mimic/hosp/admissions.csv.gz"
 
-```{bash}
-#!/bin/bash
+# Specified column types based on the provided structure
+col_types_specified <- cols(
+  subject_id = col_double(),
+  hadm_id = col_double(),
+  admittime = col_datetime(format = ""),
+  dischtime = col_datetime(format = ""),
+  deathtime = col_datetime(format = ""),
+  admission_type = col_character(),
+  admit_provider_id = col_character(),
+  admission_location = col_character(),
+  discharge_location = col_character(),
+  insurance = col_character(),
+  language = col_character(),
+  marital_status = col_character(),
+  race = col_character(),
+  edregtime = col_datetime(format = ""),
+  edouttime = col_datetime(format = ""),
+  hospital_expire_flag = col_double()
+)
 
-# Define the file path with ~ (expansion needed)
-FILE_PATH="~/mimic/hosp/admissions.csv.gz"
+# Measure run time with specified column types
+time_with_col_types <- system.time({
+  df_col_types <- read_csv(file_path, col_types = col_types_specified)
+})
 
-# Expand ~ manually (needed in scripts)
-FILE_PATH=$(eval echo $FILE_PATH)
+# Measure memory usage
+memory_col_types <- object_size(df_col_types)
 
-# Check if file exists
-if [[ ! -f "$FILE_PATH" ]]; then
-    echo "Error: File not found at $FILE_PATH"
-    exit 1
-fi
+# Displaying Results
+results_with_col_types <- data.frame(
+  Method = "read_csv (specified col_types)",
+  Time_in_seconds = time_with_col_types["elapsed"],
+  Memory_Usage_MB = as.numeric(memory_col_types) / (1024^2)
+)
 
-echo "Processing admissions.csv.gz with awk..."
-
-TIMEFORMAT=%R
-RUN_TIME=$( { time gunzip -c "$FILE_PATH" | awk -F',' '
-BEGIN { memory = 0; }
-NR == 1 { next; }  # Skip header row
-{
-    memory += length($0);  # Count memory usage in bytes
-}
-END {
-    print "Estimated memory usage (MB):", memory / (1024 * 1024);
-}
-'; } 2>&1 )
-
-echo "Run time: $RUN_TIME seconds"
+print(results_with_col_types)
 ```
-
-The run time changes, and the result tibble uses 89.2737 of memory.
+The run time changes. The run time and the memory used by the result tibble are shown above.
 
 ## Q2. Ingest big data files
 
