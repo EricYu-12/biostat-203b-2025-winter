@@ -305,28 +305,31 @@ Then use [`arrow::open_dataset`](https://arrow.apache.org/docs/r/reference/open_
 
 Write a few sentences to explain what is Apache Arrow. Imagine you want to explain it to a layman in an elevator.
 **Solution:**
-```{r}
+```{bash}
 #| eval: false
-system("gunzip -k ~/mimic/hosp/labevents.csv.gz")  
+gunzip -k ~/mimic/hosp/labevents.csv.gz
 ```
 
 ```{r}
+
+# Measure time for ingest + select + filter
 time_arrow <- system.time({
-  # Open the CSV with Arrow, specify format explicitly
   dataset <- open_dataset("~/mimic/hosp/labevents.csv", format = "csv")
   
-  # Process data in batches
   result_tibble <- dataset %>%
-    select(subject_id, itemid, value, flag) %>%
-    filter(itemid %in% c(50868, 50902, 50912)) %>%
-    collect()  # Collect only filtered data into memory
+    select(subject_id, itemid, charttime, valuenum ) %>%
+    filter(itemid %in% c(50912, 50971, 50983, 50902, 50882, 51221, 51301, 50931)) %>%
+    collect()
 })
 
-# Display results
+# Display the first 10 rows
 cat("Number of Rows:", nrow(result_tibble), "\n")
 print(head(result_tibble, 10))
+
+# Display time taken
 print(time_arrow)
 ```
+Apache Arrow is a high-efficient method to move and process large amounts of data in a short time. Imagine you bought a large bag of rice from Costco and trying to pour it into a bucket. For most of the time, if you are not strong enough to carry the bag, you would use a small rice cup to shovel the rice cup by cup to the bucket, which could take a long time. Apache Arrow is the method that lets you move the entire bag of rice at once and pour it into the rice bucket, which is more time efficient. It stores data in a format that different tools and programs can understand instantly, making data analysis much faster, especially when dealing with big files that don’t even fit into your computer’s memory.
 
 ### Q2.5 Compress `labevents.csv` to Parquet format and ingest/select/filter
 

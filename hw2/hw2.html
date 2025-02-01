@@ -3292,7 +3292,7 @@ Attaching package: &#39;R.utils&#39;</code></pre>
 <div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>memuse<span class="sc">::</span><span class="fu">Sys.meminfo</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Totalram:  15.463 GiB 
-Freeram:   12.996 GiB </code></pre>
+Freeram:   13.998 GiB </code></pre>
 </div>
 </div>
 <p>In this exercise, we explore various tools for ingesting the <a href="https://physionet.org/content/mimiciv/3.1/">MIMIC-IV</a> data introduced in <a href="https://ucla-biostat-203b.github.io/2025winter/hw/hw1/hw1.html">homework 1</a>.</p>
@@ -3491,9 +3491,9 @@ Data.table Data Types:</code></pre>
 <span id="cb49-17"><a href="#cb49-17" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(results)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>                Method Time_in_seconds Memory_Usage_MB
-1    read.csv (base R)          14.764       190.82912
-2 read_csv (tidyverse)           1.756        66.77875
-3   fread (data.table)           1.338        60.52495</code></pre>
+1    read.csv (base R)          11.368       190.82912
+2 read_csv (tidyverse)           1.633        66.77875
+3   fread (data.table)           1.108        60.52495</code></pre>
 </div>
 </div>
 <p>As shown above, fread in the data.table package is the fastest while read.csv in base R is the slowest, and there is difference in the default parsed data types. The memory taken up each resultant dataframe or tibble use are also shown above.</p>
@@ -3543,7 +3543,7 @@ Data.table Data Types:</code></pre>
 <span id="cb51-39"><a href="#cb51-39" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(results_with_col_types)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>                                Method Time_in_seconds Memory_Usage_MB
-elapsed read_csv (specified col_types)           1.501        66.77896</code></pre>
+elapsed read_csv (specified col_types)           1.266        66.77896</code></pre>
 </div>
 </div>
 <p>The run time changes. The run time and the memory used by the result tibble are shown above.</p>
@@ -3689,9 +3689,9 @@ elapsed read_csv (specified col_types)           1.501        66.77896</code></p
 <div class="sourceCode cell-code" id="cb64"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb64-1"><a href="#cb64-1" aria-hidden="true" tabindex="-1"></a><span class="bu">time</span> Rscript <span class="at">-e</span> <span class="st">&quot;read.csv(&#39;labevents_filtered.csv.gz&#39;)&quot;</span> <span class="op">&gt;</span> /dev/null <span class="dv">2</span><span class="op">&gt;&amp;</span><span class="dv">1</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>
-real    0m49.034s
-user    0m49.043s
-sys 0m1.143s</code></pre>
+real    0m49.397s
+user    0m46.576s
+sys 0m1.080s</code></pre>
 </div>
 </div>
 </section>
@@ -3704,47 +3704,48 @@ sys 0m1.143s</code></pre>
 <p>Then use <a href="https://arrow.apache.org/docs/r/reference/open_dataset.html"><code>arrow::open_dataset</code></a> to ingest <code>labevents.csv</code>, select columns, and filter <code>itemid</code> as in Q2.3. How long does the ingest+select+filter process take? Display the number of rows and the first 10 rows of the result tibble, and make sure they match those in Q2.3. (Hint: use <code>dplyr</code> verbs for selecting columns and filtering rows.)</p>
 <p>Write a few sentences to explain what is Apache Arrow. Imagine you want to explain it to a layman in an elevator. <strong>Solution:</strong></p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb66"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb66-1"><a href="#cb66-1" aria-hidden="true" tabindex="-1"></a><span class="fu">system</span>(<span class="st">&quot;gunzip -k ~/mimic/hosp/labevents.csv.gz&quot;</span>)  </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb66"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb66-1"><a href="#cb66-1" aria-hidden="true" tabindex="-1"></a><span class="fu">gunzip</span> <span class="at">-k</span> ~/mimic/hosp/labevents.csv.gz</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb67"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb67-1"><a href="#cb67-1" aria-hidden="true" tabindex="-1"></a>time_arrow <span class="ot">&lt;-</span> <span class="fu">system.time</span>({</span>
-<span id="cb67-2"><a href="#cb67-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Open the CSV with Arrow, specify format explicitly</span></span>
+<div class="sourceCode cell-code" id="cb67"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb67-1"><a href="#cb67-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Measure time for ingest + select + filter</span></span>
+<span id="cb67-2"><a href="#cb67-2" aria-hidden="true" tabindex="-1"></a>time_arrow <span class="ot">&lt;-</span> <span class="fu">system.time</span>({</span>
 <span id="cb67-3"><a href="#cb67-3" aria-hidden="true" tabindex="-1"></a>  dataset <span class="ot">&lt;-</span> <span class="fu">open_dataset</span>(<span class="st">&quot;~/mimic/hosp/labevents.csv&quot;</span>, <span class="at">format =</span> <span class="st">&quot;csv&quot;</span>)</span>
 <span id="cb67-4"><a href="#cb67-4" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb67-5"><a href="#cb67-5" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Process data in batches</span></span>
-<span id="cb67-6"><a href="#cb67-6" aria-hidden="true" tabindex="-1"></a>  result_tibble <span class="ot">&lt;-</span> dataset <span class="sc">%&gt;%</span></span>
-<span id="cb67-7"><a href="#cb67-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span>(subject_id, itemid, value, flag) <span class="sc">%&gt;%</span></span>
-<span id="cb67-8"><a href="#cb67-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span>(itemid <span class="sc">%in%</span> <span class="fu">c</span>(<span class="dv">50868</span>, <span class="dv">50902</span>, <span class="dv">50912</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb67-9"><a href="#cb67-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">collect</span>()  <span class="co"># Collect only filtered data into memory</span></span>
-<span id="cb67-10"><a href="#cb67-10" aria-hidden="true" tabindex="-1"></a>})</span>
-<span id="cb67-11"><a href="#cb67-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb67-12"><a href="#cb67-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Display results</span></span>
-<span id="cb67-13"><a href="#cb67-13" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Number of Rows:&quot;</span>, <span class="fu">nrow</span>(result_tibble), <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb67-5"><a href="#cb67-5" aria-hidden="true" tabindex="-1"></a>  result_tibble <span class="ot">&lt;-</span> dataset <span class="sc">%&gt;%</span></span>
+<span id="cb67-6"><a href="#cb67-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span>(subject_id, itemid, charttime, valuenum ) <span class="sc">%&gt;%</span></span>
+<span id="cb67-7"><a href="#cb67-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span>(itemid <span class="sc">%in%</span> <span class="fu">c</span>(<span class="dv">50912</span>, <span class="dv">50971</span>, <span class="dv">50983</span>, <span class="dv">50902</span>, <span class="dv">50882</span>, <span class="dv">51221</span>, <span class="dv">51301</span>, <span class="dv">50931</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb67-8"><a href="#cb67-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">collect</span>()</span>
+<span id="cb67-9"><a href="#cb67-9" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb67-10"><a href="#cb67-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb67-11"><a href="#cb67-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Display the first 10 rows</span></span>
+<span id="cb67-12"><a href="#cb67-12" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Number of Rows:&quot;</span>, <span class="fu">nrow</span>(result_tibble), <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>Number of Rows: 12299782 </code></pre>
+<pre><code>Number of Rows: 32679896 </code></pre>
 </div>
 <div class="sourceCode cell-code" id="cb69"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb69-1"><a href="#cb69-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">head</span>(result_tibble, <span class="dv">10</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code># A tibble: 10 × 4
-   subject_id itemid value flag      
-        &lt;int&gt;  &lt;int&gt; &lt;chr&gt; &lt;chr&gt;     
- 1   10000032  50868 12    &quot;&quot;        
- 2   10000032  50902 101   &quot;&quot;        
- 3   10000032  50912 0.4   &quot;&quot;        
- 4   10000032  50868 9     &quot;&quot;        
- 5   10000032  50902 105   &quot;&quot;        
- 6   10000032  50912 0.3   &quot;abnormal&quot;
- 7   10000032  50868 9     &quot;&quot;        
- 8   10000032  50902 105   &quot;&quot;        
- 9   10000032  50912 0.3   &quot;abnormal&quot;
-10   10000032  50868 10    &quot;&quot;        </code></pre>
+   subject_id itemid charttime           valuenum
+        &lt;int&gt;  &lt;int&gt; &lt;dttm&gt;                 &lt;dbl&gt;
+ 1   10000032  50931 2180-03-23 04:51:00     95  
+ 2   10000032  50882 2180-03-23 04:51:00     27  
+ 3   10000032  50902 2180-03-23 04:51:00    101  
+ 4   10000032  50912 2180-03-23 04:51:00      0.4
+ 5   10000032  50971 2180-03-23 04:51:00      3.7
+ 6   10000032  50983 2180-03-23 04:51:00    136  
+ 7   10000032  51221 2180-03-23 04:51:00     45.4
+ 8   10000032  51301 2180-03-23 04:51:00      3  
+ 9   10000032  51221 2180-05-06 15:25:00     42.6
+10   10000032  51301 2180-05-06 15:25:00      5  </code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb71"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb71-1"><a href="#cb71-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(time_arrow)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb71"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb71-1"><a href="#cb71-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Display time taken</span></span>
+<span id="cb71-2"><a href="#cb71-2" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(time_arrow)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>   user  system elapsed 
- 37.283   4.982 133.462 </code></pre>
+ 40.245   5.433 128.633 </code></pre>
 </div>
 </div>
+<p>Apache Arrow is a high-efficient method to move and process large amounts of data in a short time. Imagine you bought a large bag of rice from Costco and trying to pour it into a bucket. For most of the time, if you are not strong enough to carry the bag, you would use a small rice cup to shovel the rice cup by cup to the bucket, which could take a long time. Apache Arrow is the method that lets you move the entire bag of rice at once and pour it into the rice bucket, which is more time efficient. It stores data in a format that different tools and programs can understand instantly, making data analysis much faster, especially when dealing with big files that don’t even fit into your computer’s memory.</p>
 </section>
 <section id="q2.5-compress-labevents.csv-to-parquet-format-and-ingestselectfilter" class="level3">
 <h3 class="anchored" data-anchor-id="q2.5-compress-labevents.csv-to-parquet-format-and-ingestselectfilter">Q2.5 Compress <code>labevents.csv</code> to Parquet format and ingest/select/filter</h3>
