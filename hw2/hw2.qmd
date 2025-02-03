@@ -305,29 +305,32 @@ Then use [`arrow::open_dataset`](https://arrow.apache.org/docs/r/reference/open_
 
 Write a few sentences to explain what is Apache Arrow. Imagine you want to explain it to a layman in an elevator.
 **Solution:**
+First, unzip the labevents.csv.gz file
 ```{bash}
 #| eval: false
 gunzip -k ~/mimic/hosp/labevents.csv.gz
 ```
-
+Measure the time for ingest + select + filter
 ```{r}
-# Measure time for ingest + select + filter
 time_arrow <- system.time({
-  dataset <- open_dataset("~/mimic/hosp/labevents.csv", format = "csv")
+  dataset <- arrow::open_dataset("~/mimic/hosp/labevents.csv", format = "csv")
   
   result_tibble <- dataset %>%
     select(subject_id, itemid, charttime, valuenum ) %>%
     filter(itemid %in% c(50912, 50971, 50983, 50902, 50882, 51221, 51301, 50931)) %>%
     collect()
 })
-# Display time taken
+
 print(time_arrow)
-
-# Display the first 10 rows
+```
+Then, count the number of rows:
+```{r}
 cat("Number of Rows:", nrow(result_tibble), "\n")
+```
+Lastly, show the first 10 rows:
+```{r}
+# Display the first 10 rows
 print(head(result_tibble, 10))
-
-
 ```
 Apache Arrow is a method to move and process large amounts of data within a short time. Imagine you bought a large bag of rice from Costco and trying to pour it into a bucket. For most of the time, if you are not strong enough to carry the bag, you would use a small rice cup to shovel the rice cup by cup to the bucket, which could take a long time. Apache Arrow is the method that lets you move the entire bag of rice at once and pour it into the rice bucket, which is more time efficient. It stores data in a format that different tools and programs can understand instantly, making data analysis much faster, especially when dealing with big files that don’t even fit into your computer’s memory.
 
@@ -343,25 +346,23 @@ Re-write the csv file `labevents.csv` in the binary Parquet format (Hint: [`arro
 
 Write a few sentences to explain what is the Parquet format. Imagine you want to explain it to a layman in an elevator.
 **Solution:**
-Re-write the csv file into binary Parquet format
+First, re-write the csv file into binary Parquet format:
 ```{r}
 # Define the CSV file path and the output Parquet directory
-labevents_data <- open_dataset("~/mimic/hosp/labevents.csv", format = "csv")
+labevents_data <- arrow::open_dataset("~/mimic/hosp/labevents.csv", format = "csv")
 
 # Write to Parquet format
-write_dataset(labevents_data, path = "labevents_parquet", format = "parquet")
+arrow::write_dataset(labevents_data, path = "labevents_parquet", format = "parquet")
 ```
-Measure the size of the file:
+Then, measure the size of the file:
 ```{bash}
 du -sh labevents_parquet
 ```
-Measure the time for ingest, select, and filter
+After that, measure the time for ingest + select + filter
 ```{r}
-# Measure the time for ingest, select, and filter
 time_parquet <- system.time({
-  dataset_parquet <- open_dataset("labevents_parquet", format = "parquet")
+  dataset_parquet <- arrow::open_dataset("labevents_parquet", format = "parquet")
 
-# Select specific columns and apply filter
 result_tibble_parquet <- dataset_parquet %>%
   select(subject_id, itemid, charttime, valuenum) %>%
   filter(itemid %in% c(50912, 50971, 50983, 50902, 50882, 51221, 51301, 50931)) %>%
@@ -369,14 +370,18 @@ result_tibble_parquet <- dataset_parquet %>%
   collect()
 })
 
-# Display the time taken
 print(time_parquet)
 ```
-Display the number of rows and the first 10 rows
+Not stopping here, we are going to display the number of rows:
 ```{r}
 cat("Number of Rows:", nrow(result_tibble_parquet), "\n")
+```
+Finally, display the first 10 rows:
+```{r}
 print(head(result_tibble_parquet, 10))
 ```
+Parquet is a method that allow people to efficiently store large datasets. It functions like a higly organized, compressed data package which allow users to process the data within a short time. It’s a useful tool useful when dealing with large amount of data since it saves space and speeds up data processing.
+
 ### Q2.6 DuckDB
 
 <p align="center">
@@ -388,6 +393,44 @@ print(head(result_tibble_parquet, 10))
 Ingest the Parquet file, convert it to a DuckDB table by [`arrow::to_duckdb`](https://arrow.apache.org/docs/r/reference/to_duckdb.html), select columns, and filter rows as in Q2.5. How long does the ingest+convert+select+filter process take? Display the number of rows and the first 10 rows of the result tibble and make sure they match those in Q2.3. (Hint: use `dplyr` verbs for selecting columns and filtering rows.)
 
 Write a few sentences to explain what is DuckDB. Imagine you want to explain it to a layman in an elevator.
+
+**Solution:**
+First, ingest the Parquet file and convert it to a DuckDB table, and measure the time it takes to finish the process:
+```{r}
+parquet_dir <- "labevents_parquet"
+
+process_time <- system.time({
+  # Ingest the Parquet dataset
+  dataset_parquet <- arrow::open_dataset(parquet_dir, format = "parquet")
+  
+  # Convert the Arrow dataset to a DuckDB table
+  con <- dbConnect(duckdb::duckdb())
+  duckdb_table <- arrow::to_duckdb(dataset_parquet, con = con, table_name = "labevents_table")
+  
+  # Select and filter data
+  result_tibble_duckdb <- duckdb_table %>%
+    select(subject_id, itemid, charttime, valuenum) %>%
+    filter(itemid %in% c(50912, 50971, 50983, 50902, 50882, 51221, 51301, 50931)) %>%
+    arrange(subject_id, charttime) %>%  # Ensure the same order as Q2.5
+    collect()
+})
+
+cat("\nIngest + Convert + Select + Filter Time:\n")
+print(process_time)
+```
+Then, count the number of rows:
+```{r}
+cat("\nNumber of Rows:", nrow(result_tibble_duckdb), "\n")
+```
+Lastly, show the first 10 rows: 
+```{r}
+cat("\nFirst 10 Rows:\n")
+print(head(result_tibble_duckdb, 10))
+
+# Close DuckDB connection
+dbDisconnect(con, shutdown = TRUE)
+```
+DuckDB is like a lightning-fast, in-memory database that works directly inside your data tools such as R or Python. Consider it as an advanced version of Excel that can handle millions of rows without needing for a big database server. It’s great for doing fast data analysis on laptops and this natural of it makes DuckDB a perfect tool for data scientists to work on large datasets.
 
 ## Q3. Ingest and filter `chartevents.csv.gz`
 
