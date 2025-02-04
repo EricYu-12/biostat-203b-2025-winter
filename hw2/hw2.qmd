@@ -64,21 +64,21 @@ Which function is fastest? Is there difference in the (default) parsed data type
 **Solution:**
 ```{r}
 # File path
-file_path <- "~/mimic/hosp/admissions.csv.gz"
+file_path_1 <- "~/mimic/hosp/admissions.csv.gz"
 
 # Read with read.csv in base R
 time_read_csv_base <- system.time({
-  df_base <- read.csv(file_path)
+  df_base <- read.csv(file_path_1)
 })
 
 # Read with read_csv in tidyverse 
 time_read_csv_tidyverse <- system.time({
-  df_tidyverse <- read_csv(file_path)
+  df_tidyverse <- read_csv(file_path_1)
 })
 
 # Read with fread in data.table package
 time_fread_datatable <- system.time({
-  df_datatable <- fread(file_path)
+  df_datatable <- fread(file_path_1)
 })
 
 # Comparing Data Types
@@ -117,7 +117,7 @@ Re-ingest `admissions.csv.gz` by indicating appropriate column data types in `re
 **Solution:**
 ```{r}
 # File path
-file_path <- "~/mimic/hosp/admissions.csv.gz"
+file_path_2 <- "~/mimic/hosp/admissions.csv.gz"
 
 # Specified column types based on the provided structure
 col_types_specified <- cols(
@@ -141,7 +141,7 @@ col_types_specified <- cols(
 
 # Measure run time with specified column types
 time_with_col_types <- system.time({
-  df_col_types <- read_csv(file_path, col_types = col_types_specified)
+  df_col_types <- read_csv(file_path_2, col_types = col_types_specified)
 })
 
 # Measure memory usage
@@ -317,7 +317,8 @@ time_arrow <- system.time({
   
   result_tibble <- dataset %>%
     select(subject_id, itemid, charttime, valuenum ) %>%
-    filter(itemid %in% c(50912, 50971, 50983, 50902, 50882, 51221, 51301, 50931)) %>%
+    filter(itemid %in% c(50912, 50971, 50983, 50902, 50882, 51221, 
+                         51301, 50931)) %>%
     collect()
 })
 
@@ -329,7 +330,6 @@ cat("Number of Rows:", nrow(result_tibble), "\n")
 ```
 Lastly, show the first 10 rows:
 ```{r}
-# Display the first 10 rows
 print(head(result_tibble, 10))
 ```
 Apache Arrow is a method to move and process large amounts of data within a short time. Imagine you bought a large bag of rice from Costco and trying to pour it into a bucket. For most of the time, if you are not strong enough to carry the bag, you would use a small rice cup to shovel the rice cup by cup to the bucket, which could take a long time. Apache Arrow is the method that lets you move the entire bag of rice at once and pour it into the rice bucket, which is more time efficient. It stores data in a format that different tools and programs can understand instantly, making data analysis much faster, especially when dealing with big files that don’t even fit into your computer’s memory.
@@ -365,7 +365,8 @@ time_parquet <- system.time({
 
 result_tibble_parquet <- dataset_parquet %>%
   select(subject_id, itemid, charttime, valuenum) %>%
-  filter(itemid %in% c(50912, 50971, 50983, 50902, 50882, 51221, 51301, 50931)) %>%
+  filter(itemid %in% c(50912, 50971, 50983, 50902, 50882, 51221, 
+                       51301, 50931)) %>%
   arrange(subject_id, charttime) %>%  # Ensure sorting matches Q2.3
   collect()
 })
@@ -410,7 +411,8 @@ process_time <- system.time({
   # Select and filter data
   result_tibble_duckdb <- duckdb_table %>%
     select(subject_id, itemid, charttime, valuenum) %>%
-    filter(itemid %in% c(50912, 50971, 50983, 50902, 50882, 51221, 51301, 50931)) %>%
+    filter(itemid %in% c(50912, 50971, 50983, 50902, 50882, 51221, 
+                         51301, 50931)) %>%
     arrange(subject_id, charttime) %>%  # Ensure the same order as Q2.5
     collect()
 })
@@ -443,7 +445,7 @@ zcat < ~/mimic/icu/chartevents.csv.gz | head -10
 How many rows? 433 millions.
 
 ```{bash}
-#| eval: false
+#| eval: true
 zcat < ~/mimic/icu/chartevents.csv.gz | tail -n +2 | wc -l
 ```
 
@@ -457,8 +459,29 @@ In later exercises, we are interested in the vitals for ICU patients: heart rate
 
 Document the steps and show code. Display the number of rows and the first 10 rows of the result tibble.
 **Solution:**
-Step1: Unzip the file
+Step 1: Unzip the file
+```{bash}
+#| eval: false
+gzip -d -k ~/mimic/icu/chartevents.csv.gz"
+```
+Step 2: Use arrow::open_dataset to ingest + select + filter the file and show the process time
 ```{r}
-# Unzip the file
-system("gzip -d -k ~/mimic/icu/chartevents.csv.gz")
+time_arrow <- system.time({
+  dataset <- arrow::open_dataset("~/mimic/icu/chartevents.csv", format = "csv")
+  
+  result_tibble <- dataset %>%
+    select(subject_id, itemid, charttime, valuenum ) %>%
+    filter(itemid %in% c(220045, 220181, 220179, 223761, 220210)) %>%
+    collect()
+})
+
+print(time_arrow)
+```
+Step 3: count the number of rows:
+```{r}
+cat("Number of Rows:", nrow(result_tibble), "\n")
+```
+Step 4: show the first 10 rows:
+```{r}
+print(head(result_tibble, 10))
 ```
