@@ -63,7 +63,7 @@ There are quite a few utilities in R for reading plain text data files. Let us t
 Which function is fastest? Is there difference in the (default) parsed data types? How much memory does each resultant dataframe or tibble use? (Hint: `system.time` measures run times; `pryr::object_size` measures memory usage; all these readers can take gz file as input without explicit decompression.) 
 **Solution:**
 ```{r}
-# File path
+# Determine the file path
 file_path_1 <- "~/mimic/hosp/admissions.csv.gz"
 
 # Read with read.csv in base R
@@ -81,7 +81,7 @@ time_fread_datatable <- system.time({
   df_datatable <- fread(file_path_1)
 })
 
-# Comparing Data Types
+# Showing and Compare the Data Types
 cat("Base R Data Types:\n")
 str(df_base)
 
@@ -109,7 +109,7 @@ results <- data.frame(
 
 print(results)
 ```
-As shown above, fread in the data.table package is the fastest while read.csv in base R is the slowest, and there is difference in the default parsed data types. The memory taken up each resultant dataframe or tibble use are also shown above.
+As shown above, fread in the data.table package is the fastest while read.csv in base R is the slowest. The memory taken up by each resultant dataframe or tibble use are also shown above. For default parsed data types, while read_csv and fread are similar except for different naming for numeric data (`int` for fread and `num` for read_csv), read.csv is different in some variables’ data type such as catigorizing time as chr while the other two methods catigorize as POSIXct.
 
 ### Q1.2 User-supplied data types
 
@@ -156,7 +156,7 @@ results_with_col_types <- data.frame(
 
 print(results_with_col_types)
 ```
-The run time changes. The run time and the memory used by the result tibble are shown above.
+The run time changes. The run time and the memory usage of the result tibble are shown above.
 
 ## Q2. Ingest big data files
 
@@ -210,7 +210,7 @@ result <- tryCatch({
   return(NULL)
 })
 ```
-My system did not finish the process of ingestion in 3 minutes because my laptop does not have enough memory (RAM) to ingest the large labevents.cvs file.
+It took my system more than 3 minutes before it crashed and the process of ingestion did not finish. The reason for this situation was because the file was too large and my laptop does not have enough memory (RAM) to process such large file.
 
 ### Q2.2 Ingest selected columns of `labevents.csv.gz` by `read_csv`
 
@@ -244,7 +244,7 @@ result <- tryCatch({
   return(NULL)
 })
 ```
-My program is forced to terminate again since my laptop still does not have enough RAM to ingest the data even just trying to ingest some specific columns.
+My program was forced to terminate again since the file was still to large and my laptop did not have enough RAM to ingest the data.
 
 ### Q2.3 Ingest a subset of `labevents.csv.gz`
 
@@ -265,7 +265,7 @@ zcat ~/mimic/hosp/labevents.csv.gz | head -n 1
 
 # Extract the wanted columns and rows and put them into a new file
 zcat < ~/mimic/hosp/labevents.csv.gz |
-  awk -F, 'BEGIN {OFS=","; print "subject_id,itemid,charttime,valuenum"}
+  awk -F, 'BEGIN {OFS=","; print "subject_id, itemid, charttime, valuenum"}
   NR==1 {next}
   ($5 == 50912 || $5 == 50971 || $5 == 50983 || $5 == 50902 ||
    $5 == 50882 || $5 == 51221 || $5 == 51301 || $5 == 50931) {
@@ -316,8 +316,8 @@ time_arrow <- system.time({
   dataset <- arrow::open_dataset("~/mimic/hosp/labevents.csv", format = "csv")
   
   result_tibble <- dataset %>%
-    select(subject_id, itemid, charttime, valuenum ) %>%
-    filter(itemid %in% c(50912, 50971, 50983, 50902, 50882, 51221, 
+    select(subject_id, itemid, charttime, valuenum) %>%
+    filter(itemid %in% c (50912, 50971, 50983, 50902, 50882, 51221, 
                          51301, 50931)) %>%
     collect()
 })
@@ -332,7 +332,7 @@ Lastly, show the first 10 rows:
 ```{r}
 print(head(result_tibble, 10))
 ```
-Apache Arrow is a method to move and process large amounts of data within a short time. Imagine you bought a large bag of rice from Costco and trying to pour it into a bucket. For most of the time, if you are not strong enough to carry the bag, you would use a small rice cup to shovel the rice cup by cup to the bucket, which could take a long time. Apache Arrow is the method that lets you move the entire bag of rice at once and pour it into the rice bucket, which is more time efficient. It stores data in a format that different tools and programs can understand instantly, making data analysis much faster, especially when dealing with big files that don’t even fit into your computer’s memory.
+Apache Arrow is a method to move and process large amounts of data within a short time. Imagine you bought a large bag of rice from Costco and tried to pour it into a rice bucket. If you are not strong enough to carry the bag and pour the rice directly, you will need to transfer the rice with a small rice cup little by little to the bucket, which could take a long time. Apache Arrow is like a secret strength booster which lets you move the entire bag of rice at once and pour it into the bucket, saving you a lot of time and trouble. Apache Arrow stores data in a format that different tools and programs can understand instantly, making data analysis quicker more efficient, especially when dealing with big files that require insant amount of computer memory.
 
 ### Q2.5 Compress `labevents.csv` to Parquet format and ingest/select/filter
 
@@ -346,7 +346,7 @@ Re-write the csv file `labevents.csv` in the binary Parquet format (Hint: [`arro
 
 Write a few sentences to explain what is the Parquet format. Imagine you want to explain it to a layman in an elevator.
 **Solution:**
-First, re-write the csv file into binary Parquet format:
+Step 1, re-write the csv file into binary Parquet format:
 ```{r}
 # Define the CSV file path and the output Parquet directory
 labevents_data <- arrow::open_dataset("~/mimic/hosp/labevents.csv", format = "csv")
@@ -354,17 +354,17 @@ labevents_data <- arrow::open_dataset("~/mimic/hosp/labevents.csv", format = "cs
 # Write to Parquet format
 arrow::write_dataset(labevents_data, path = "labevents_parquet", format = "parquet")
 ```
-Then, measure the size of the file:
+Step 2, measure the size of the file:
 ```{bash}
 du -sh labevents_parquet
 ```
-After that, measure the time for ingest + select + filter
+Step 3, measure the time for ingest + select + filter
 ```{r}
 time_parquet <- system.time({
-  dataset_parquet <- arrow::open_dataset("labevents_parquet", format = "parquet")
+  dataset_parquet <- arrow::open_dataset ("labevents_parquet", format = "parquet")
 
 result_tibble_parquet <- dataset_parquet %>%
-  select(subject_id, itemid, charttime, valuenum) %>%
+  select (subject_id, itemid, charttime, valuenum) %>%
   filter(itemid %in% c(50912, 50971, 50983, 50902, 50882, 51221, 
                        51301, 50931)) %>%
   arrange(subject_id, charttime) %>%  # Ensure sorting matches Q2.3
@@ -373,15 +373,15 @@ result_tibble_parquet <- dataset_parquet %>%
 
 print(time_parquet)
 ```
-Not stopping here, we are going to display the number of rows:
+Step 4: display the number of rows:
 ```{r}
 cat("Number of Rows:", nrow(result_tibble_parquet), "\n")
 ```
-Finally, display the first 10 rows:
+Step 5, display the first 10 rows:
 ```{r}
 print(head(result_tibble_parquet, 10))
 ```
-Parquet is a method that allow people to efficiently store large datasets. It functions like a higly organized, compressed data package which allow users to process the data within a short time. It’s a useful tool useful when dealing with large amount of data since it saves space and speeds up data processing.
+Parquet is a method that allow people to efficiently store large datasets. It functions like a higly organized, compressed data package which allow users to process the data within a short time. It’s a useful tool for processing large amount of data since it saves space and speeds up data processing.
 
 ### Q2.6 DuckDB
 
@@ -396,7 +396,7 @@ Ingest the Parquet file, convert it to a DuckDB table by [`arrow::to_duckdb`](ht
 Write a few sentences to explain what is DuckDB. Imagine you want to explain it to a layman in an elevator.
 
 **Solution:**
-First, ingest the Parquet file and convert it to a DuckDB table, and measure the time it takes to finish the process:
+Step 1, ingest the Parquet file and convert it to a DuckDB table, and measure the time it takes to finish the process:
 ```{r}
 parquet_dir <- "labevents_parquet"
 
@@ -420,11 +420,11 @@ process_time <- system.time({
 cat("\nIngest + Convert + Select + Filter Time:\n")
 print(process_time)
 ```
-Then, count the number of rows:
+Step 2, count the number of rows:
 ```{r}
 cat("\nNumber of Rows:", nrow(result_tibble_duckdb), "\n")
 ```
-Lastly, show the first 10 rows: 
+Step 3, show the first 10 rows: 
 ```{r}
 cat("\nFirst 10 Rows:\n")
 print(head(result_tibble_duckdb, 10))
@@ -470,7 +470,7 @@ time_arrow <- system.time({
   dataset <- arrow::open_dataset("~/mimic/icu/chartevents.csv", format = "csv")
   
   result_tibble <- dataset %>%
-    select(subject_id, itemid, charttime, valuenum ) %>%
+    select(subject_id, itemid, charttime, valuenum) %>%
     filter(itemid %in% c(220045, 220181, 220179, 223761, 220210)) %>%
     collect()
 })
