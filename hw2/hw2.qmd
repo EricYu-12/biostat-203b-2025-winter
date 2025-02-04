@@ -305,12 +305,12 @@ Then use [`arrow::open_dataset`](https://arrow.apache.org/docs/r/reference/open_
 
 Write a few sentences to explain what is Apache Arrow. Imagine you want to explain it to a layman in an elevator.
 **Solution:**
-First, unzip the labevents.csv.gz file
+Step 1, unzip the labevents.csv.gz file
 ```{bash}
 #| eval: false
 gunzip -k ~/mimic/hosp/labevents.csv.gz
 ```
-Measure the time for ingest + select + filter
+Step 2, measure the time for ingest + select + filter
 ```{r}
 time_arrow <- system.time({
   dataset <- arrow::open_dataset("~/mimic/hosp/labevents.csv", format = "csv")
@@ -324,11 +324,11 @@ time_arrow <- system.time({
 
 print(time_arrow)
 ```
-Then, count the number of rows:
+Step 3, count the number of rows:
 ```{r}
 cat("Number of Rows:", nrow(result_tibble), "\n")
 ```
-Lastly, show the first 10 rows:
+Step 4, show the first 10 rows:
 ```{r}
 print(head(result_tibble, 10))
 ```
@@ -348,10 +348,8 @@ Write a few sentences to explain what is the Parquet format. Imagine you want to
 **Solution:**
 Step 1, re-write the csv file into binary Parquet format:
 ```{r}
-# Define the CSV file path and the output Parquet directory
 labevents_data <- arrow::open_dataset("~/mimic/hosp/labevents.csv", format = "csv")
 
-# Write to Parquet format
 arrow::write_dataset(labevents_data, path = "labevents_parquet", format = "parquet")
 ```
 Step 2, measure the size of the file:
