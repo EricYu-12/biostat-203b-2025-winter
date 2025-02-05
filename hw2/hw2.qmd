@@ -226,7 +226,7 @@ result <- tryCatch({
   # Ingest only selected columns
   df_selected <- read_csv(
     "~/mimic/hosp/labevents.csv.gz",
-    col_select = c(subject_id, itemid, charttime, valuenum)
+    col_select = c(subject_id, charttime, itemid, valuenum)
   )
   
   end_time <- Sys.time()
@@ -265,13 +265,14 @@ zcat ~/mimic/hosp/labevents.csv.gz | head -n 1
 
 # Extract the wanted columns and rows and put them into a new file
 zcat < ~/mimic/hosp/labevents.csv.gz |
-  awk -F, 'BEGIN {OFS=","; print "subject_id, itemid, charttime, valuenum"}
+  awk -F, 'BEGIN {OFS=","; print "subject_id, charttime, itemid, valuenum"}
   NR==1 {next}
   ($5 == 50912 || $5 == 50971 || $5 == 50983 || $5 == 50902 ||
    $5 == 50882 || $5 == 51221 || $5 == 51301 || $5 == 50931) {
     print $2, $5, $7, $10
   }' |
-  gzip > labevents_filtered.csv.gz
+  
+gzip > labevents_filtered.csv.gz
 ```
 The file is created
 
@@ -316,7 +317,7 @@ time_arrow <- system.time({
   dataset <- arrow::open_dataset("~/mimic/hosp/labevents.csv", format = "csv")
   
   result_tibble <- dataset %>%
-    select(subject_id, itemid, charttime, valuenum) %>%
+    select(subject_id, charttime, itemid, valuenum) %>%
     filter(itemid %in% c (50912, 50971, 50983, 50902, 50882, 51221, 
                          51301, 50931)) %>%
     collect()
@@ -362,10 +363,10 @@ time_parquet <- system.time({
   dataset_parquet <- arrow::open_dataset ("labevents_parquet", format = "parquet")
 
 result_tibble_parquet <- dataset_parquet %>%
-  select (subject_id, itemid, charttime, valuenum) %>%
+  select (subject_id, charttime, itemid, valuenum) %>%
   filter(itemid %in% c(50912, 50971, 50983, 50902, 50882, 51221, 
                        51301, 50931)) %>%
-  arrange(subject_id, charttime) %>%  # Ensure sorting matches Q2.3
+  arrange(subject_id, charttime) %>%  
   collect()
 })
 
@@ -408,10 +409,10 @@ process_time <- system.time({
   
   # Select and filter data
   result_tibble_duckdb <- duckdb_table %>%
-    select(subject_id, itemid, charttime, valuenum) %>%
+    select(subject_id, charttime, itemid, valuenum) %>%
     filter(itemid %in% c(50912, 50971, 50983, 50902, 50882, 51221, 
                          51301, 50931)) %>%
-    arrange(subject_id, charttime) %>%  # Ensure the same order as Q2.5
+    arrange(subject_id, charttime) %>%  
     collect()
 })
 
@@ -468,7 +469,7 @@ time_arrow <- system.time({
   dataset <- arrow::open_dataset("~/mimic/icu/chartevents.csv", format = "csv")
   
   result_tibble <- dataset %>%
-    select(subject_id, itemid, charttime, valuenum) %>%
+    select(subject_id, charttime, itemid, valuenum) %>%
     filter(itemid %in% c(220045, 220181, 220179, 223761, 220210)) %>%
     collect()
 })
