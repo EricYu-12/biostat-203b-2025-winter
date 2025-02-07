@@ -190,7 +190,6 @@ Try to ingest `labevents.csv.gz` using `read_csv`. What happens? If it takes mor
 **Solution:**
 ```{r}
 #| eval: false
-# Set a timer to monitor the performance
 start_time <- Sys.time()
 
 # Use tryCatch to handle interruptions
@@ -218,7 +217,6 @@ Try to ingest only columns `subject_id`, `itemid`, `charttime`, and `valuenum` i
 **Solution:**
 ```{r}
 #| eval: false
-# Measure the time for ingestion
 start_time <- Sys.time()
 
 # Use tryCatch to handle any potential errors
@@ -279,7 +277,7 @@ The file is created
 Display the first 10 lines of the new file `labevents_filtered.csv.gz`. How many lines are in this new file, excluding the header? How long does it take `read_csv` to ingest `labevents_filtered.csv.gz`?
 
 **Solution:**
-Display the first 10 lines of the new file excluding header:
+Display the first 10 lines of the new file:
 ```{bash}
 zcat labevents_filtered.csv.gz | head -n 10
 ```
