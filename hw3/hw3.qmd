@@ -26,6 +26,9 @@ library(memuse)
 library(pryr)
 library(R.utils)
 library(tidyverse)
+library(readr)
+library(dplyr)
+library(ggplot2)
 ```
 
 Display your machine memory.
@@ -174,11 +177,41 @@ zcat < ~/mimic/icu/icustays.csv.gz | head
 
 Import `icustays.csv.gz` as a tibble `icustays_tble`. 
 ```{r}
+#| eval: false
+icustays_tble <- read_csv("~/mimic/icu/icustays.csv.gz")
 ```
 
 ### Q2.2 Summary and visualization
 
 How many unique `subject_id`? Can a `subject_id` have multiple ICU stays? Summarize the number of ICU stays per `subject_id` by graphs. 
+```{r}
+icustays_tble <- read_csv("~/mimic/icu/icustays.csv.gz")
+
+# Count the number of unique subject_id
+num_unique_subjects <- icustays_tble %>%
+  distinct(subject_id) %>%
+  nrow()
+
+cat("Number of unique subject_id:", num_unique_subjects, "\n")
+
+# Count ICU stays per subject_id
+icu_stays_per_subject <- icustays_tble %>%
+  group_by(subject_id) %>%
+  summarise(num_stays = n())
+
+# Check if a subject_id can have multiple stays
+max_stays <- max(icu_stays_per_subject$num_stays)
+cat("Maximum ICU stays for a single subject_id:", max_stays, "\n")
+
+# Plot the distribution of ICU stays per subject_id
+ggplot(icu_stays_per_subject, aes(x = num_stays)) +
+  geom_bar(fill = "steelblue", color = "black") +
+  labs(title = "Distribution of ICU Stays per Subject",
+       x = "Number of ICU Stays",
+       y = "Count of Subjects") +
+  theme_minimal()
+
+```
 
 ## Q3. `admissions` data
 
@@ -190,9 +223,13 @@ zcat < ~/mimic/hosp/admissions.csv.gz | head
 ### Q3.1 Ingestion
 
 Import `admissions.csv.gz` as a tibble `admissions_tble`.
+**Solution:**
+```{r}
+#| eval: false
+admissions_tble <- read_csv("~/mimic/hosp/admissions.csv.gz")
+```
 
 ### Q3.2 Summary and visualization
-
 Summarize the following information by graphics and explain any patterns you see.
 
 - number of admissions per patient  
@@ -202,7 +239,66 @@ Summarize the following information by graphics and explain any patterns you see
 
 According to the [MIMIC-IV documentation](https://mimic.mit.edu/docs/iv/about/concepts/#date-shifting), 
 
-> All dates in the database have been shifted to protect patient confidentiality. Dates will be internally consistent for the same patient, but randomly distributed in the future. Dates of birth which occur in the present time are not true dates of birth. Furthermore, dates of birth which occur before the year 1900 occur if the patient is older than 89. In these cases, the patient’s age at their first admission has been fixed to 300.
+All dates in the database have been shifted to protect patient confidentiality. Dates will be internally consistent for the same patient, but randomly distributed in the future. Dates of birth which occur in the present time are not true dates of birth. Furthermore, dates of birth which occur before the year 1900 occur if the patient is older than 89. In these cases, the patient’s age at their first admission has been fixed to 300.
+**Solution:**
+```{r}
+# Import the admissions dataset
+admissions_tble <- read_csv("~/mimic/hosp/admissions.csv.gz")
+
+# Convert datetime columns to proper format
+admissions_tble <- admissions_tble %>%
+  mutate(admittime = as.POSIXct(admittime, format="%Y-%m-%d %H:%M:%S"),
+         dischtime = as.POSIXct(dischtime, format="%Y-%m-%d %H:%M:%S"))
+
+# ---- 1. Number of Admissions per Patient ----
+admissions_per_patient <- admissions_tble %>%
+  count(subject_id)
+
+# Plot the distribution of admissions per patient
+ggplot(admissions_per_patient, aes(x = n)) +
+  geom_bar(fill = "steelblue", color = "black") +
+  labs(title = "Number of Admissions per Patient",
+       x = "Admissions",
+       y = "Number of Patients") +
+  theme_minimal()
+
+# ---- 2. Admission Hour Analysis ----
+admissions_tble <- admissions_tble %>%
+  mutate(admission_hour = hour(admittime))
+
+# Plot admission hour distribution
+ggplot(admissions_tble, aes(x = admission_hour)) +
+  geom_bar(fill = "tomato", color = "black") +
+  labs(title = "Admission Hour Distribution",
+       x = "Hour of Admission",
+       y = "Number of Admissions") +
+  theme_minimal()
+
+# ---- 3. Admission Minute Analysis ----
+admissions_tble <- admissions_tble %>%
+  mutate(admission_minute = minute(admittime))
+
+# Plot admission minute distribution
+ggplot(admissions_tble, aes(x = admission_minute)) +
+  geom_bar(fill = "purple", color = "black") +
+  labs(title = "Admission Minute Distribution",
+       x = "Minute of Admission",
+       y = "Number of Admissions") +
+  theme_minimal()
+
+# ---- 4. Length of Hospital Stay ----
+admissions_tble <- admissions_tble %>%
+  mutate(length_of_stay_days = as.numeric(difftime(dischtime, admittime, units="days")))
+
+# Plot the distribution of hospital stay length
+ggplot(admissions_tble, aes(x = length_of_stay_days)) +
+  geom_histogram(binwidth = 1, fill = "green", color = "black") +
+  labs(title = "Hospital Stay Length Distribution",
+       x = "Length of Stay (Days)",
+       y = "Number of Patients") +
+  theme_minimal()
+```
+
 
 ## Q4. `patients` data
 
