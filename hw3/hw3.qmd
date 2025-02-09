@@ -66,10 +66,10 @@ d_icd_diagnoses <- read_csv("~/mimic/hosp/d_icd_diagnoses.csv.gz", show_col_type
 ```
 
 ```{r}
-## Filter Data for Subject ID 10063848
-#Filter Data for Subject ID 10063848
+# Define the subject ID for filtering
 subject_id <- 10063848
 
+# Get demographic information
 demo_info <- patients %>% filter(subject_id == !!subject_id)
 
 # Ensure 'race' column exists
@@ -77,78 +77,107 @@ if (!"race" %in% colnames(demo_info)) {
   demo_info <- demo_info %>% mutate(race = "Unknown")
 }
 
+# Get admission, transfer, and lab information
 adm_info <- admissions %>% filter(subject_id == !!subject_id)
 adt_info <- transfers %>% filter(subject_id == !!subject_id)
 lab_info <- labevents_data %>% filter(subject_id == !!subject_id)
-proc_info <- procedures_icd %>% filter(subject_id == !!subject_id) %>%
-  left_join(d_icd_procedures, by = c("icd_code", "icd_version")) %>%
-  mutate(long_title = str_trim(long_title),  # Trim whitespace
-         long_title = str_to_lower(long_title),  # Convert to lowercase for consistency
-         long_title = recode(long_title,  # Ensure exact match with proc_shapes
-             "spinal tap" = "spinal tap",
-             "other incision of brain" = "other incision of brain",
-             "central venous catheter placement" = "central venous catheter placement"
-         ))
 
-# Get diagnoses
-diag_info <- diagnoses_icd %>% filter(subject_id == !!subject_id) %>%
+# Process Procedures Data: Join with `d_icd_procedures` to get `long_title`
+proc_info <- procedures_icd %>%
+  filter(subject_id == !!subject_id) %>%
+  left_join(d_icd_procedures, by = c("icd_code", "icd_version")) %>%
+  mutate(
+    long_title = str_trim(long_title) %>% str_to_lower()  # Standardize text
+  ) %>%
+  drop_na(long_title)  # Remove rows without a valid long_title
+
+# Process diagnosis data
+diag_info <- diagnoses_icd %>% 
+  filter(subject_id == !!subject_id) %>%
   left_join(d_icd_diagnoses, by = c("icd_code", "icd_version"))
 
-## Extract Key Diagnoses
-top_diagnoses <- diag_info %>% count(long_title, name = "count", sort = TRUE) %>% head(3) %>% pull(long_title)
+# Extract top 3 diagnoses
+top_diagnoses <- diag_info %>%
+  count(long_title, name = "count", sort = TRUE) %>%
+  head(3) %>%
+  pull(long_title)
 
 subtitle_text <- paste(top_diagnoses, collapse = "\n")
 
-## Prepare Data for Visualization
 # Process ADT data
-adt_info <- adt_info %>% mutate(
-  start = ymd_hms(intime),
-  end = ymd_hms(outtime),
-  care_unit = factor(careunit)
-) %>% drop_na(start, end)
+adt_info <- adt_info %>%
+  mutate(
+    start = ymd_hms(intime),
+    end = ymd_hms(outtime),
+    event_type = "ADT",
+    care_unit = factor(careunit)
+  ) %>%
+  drop_na(start, end)
 
 # Process lab events
 lab_info <- lab_info %>%
-  collect() %>%  # Convert Arrow dataset to DataFrame
-  mutate(time = ymd_hms(charttime)) %>%
+  collect() %>%
+  mutate(time = ymd_hms(charttime), event_type = "Lab") %>%
   drop_na(time)
 
-# Process procedures, ensuring valid dates
+# Process procedure events (ensuring valid dates)
 proc_info <- proc_info %>%
-  filter(!is.na(chartdate) & chartdate != "") %>%  # Remove rows with missing or empty dates
-  mutate(time = suppressWarnings(parse_date_time(chartdate, orders = c("Ymd HMS", "Ymd")))) %>% # Flexible date parsing
-  drop_na(time)  # Remove any remaining rows with NA time values
+  filter(!is.na(chartdate) & chartdate != "") %>%
+  mutate(
+    time = suppressWarnings(parse_date_time(chartdate, orders = c("Ymd HMS", "Ymd"))), 
+    event_type = "Procedure"
+  ) %>%
+  drop_na(time)
 
-# Ensure long_title has the correct factor levels
-proc_shapes <- c("spinal tap" = 15, "other incision of brain" = 17, 
-                 "central venous catheter placement" = 16)
-proc_info <- proc_info %>% filter(long_title %in% names(proc_shapes))
-proc_info$long_title <- factor(proc_info$long_title, levels = names(proc_shapes)) 
+# Define procedure shapes
+proc_shapes <- c("spinal tap" = 15, "other incision of brain" = 17, "central venous catheter placement" = 16)
 
-## Plot the Data
-# Create the plot
+# Ensure correct factor levels for `long_title`
+proc_info <- proc_info %>%
+  filter(long_title %in% names(proc_shapes)) %>%
+  mutate(long_title = factor(long_title, levels = names(proc_shapes)))
+
+# Combine all event data for plotting
+event_data <- bind_rows(
+  adt_info %>% select(time = start, event_type, care_unit, end),
+  lab_info %>% select(time, event_type),
+  proc_info %>% select(time, event_type, long_title)
+)
+
+# Define factor levels to control y-axis order
+event_data$event_type <- factor(event_data$event_type, levels = 
+                                  c("ADT", "Lab", "Procedure"))
+
+# Create the visualization
 ggplot() +
   # ADT bars
-  geom_segment(data = adt_info, aes(x = start, xend = end, y = "ADT", yend = "ADT", color = care_unit, linewidth = as.numeric(care_unit %in% c("SICU", "CCU")))) +
+  geom_segment(data = adt_info, 
+               aes(x = start, xend = end, y = event_type, 
+                   yend = event_type, color = care_unit, 
+                   linewidth = as.numeric(care_unit %in% c("SICU", "CCU")))) +
   
   # Lab events
-  geom_point(data = lab_info, aes(x = time, y = "Lab"), shape = 3, size = 2) +
+  geom_point(data = lab_info, aes(x = time, y = event_type), shape = 3, size = 2) +
   
   # Procedure events
-  geom_point(data = proc_info, aes(x = time, y = "Procedure", shape = long_title), size = 4) +
+  geom_point(data = proc_info, aes(x = time, y = event_type, 
+                                   shape = long_title), size = 4) +
   
-  # Labels
+  # Labels and titles
   labs(
-    title = paste("Patient", subject_id, ",", demo_info$gender, ",", demo_info$anchor_age, "years old,", demo_info$race),
+    title = paste("Patient", subject_id, ",", demo_info$gender, ",", 
+                  demo_info$anchor_age, "years old,", demo_info$race),
     subtitle = subtitle_text,
     x = "Calendar Time",
-    y = "Event Type",
+    y = NULL,
     color = "Care Unit",
     shape = "Procedure"
   ) +
   
-  # Legends and theme adjustments
-  scale_shape_manual(values = proc_shapes) +
+  # Set shape mapping for procedures
+  scale_shape_manual(values = proc_shapes, drop = FALSE) +
+
+  # Theme settings
   theme_minimal() +
   theme(
     legend.position = "bottom",
@@ -157,7 +186,6 @@ ggplot() +
   )
 ```
 
-
 ### Q1.2 ICU stays
 
 ICU stays are a subset of ADT history. This figure shows the vitals of the patient `10001217` during ICU stays. The x-axis is the calendar time, and the y-axis is the value of the vital. The color of the line represents the type of vital. The facet grid shows the abbreviation of the vital and the stay ID.
@@ -165,6 +193,7 @@ ICU stays are a subset of ADT history. This figure shows the vitals of the patie
 ![](10001217_icu.png)
 
 Do a similar visualization for the patient `10063848`.
+**Solution:**
 
 ## Q2. ICU stays
 
@@ -212,6 +241,7 @@ ggplot(icu_stays_per_subject, aes(x = num_stays)) +
   theme_minimal()
 
 ```
+Yes, a single subject_id can have multiple stays and the maximum ICU stays for a single subject_id is 41.
 
 ## Q3. `admissions` data
 
@@ -310,10 +340,41 @@ zcat < ~/mimic/hosp/patients.csv.gz | head
 ### Q4.1 Ingestion
 
 Import `patients.csv.gz` (<https://mimic.mit.edu/docs/iv/modules/hosp/patients/>) as a tibble `patients_tble`.
-
+**Solution:**
+```{r}
+#| eval: false
+patients_tble <- read_csv("~/mimic/hosp/patients.csv.gz")
+```
 ### Q4.2 Summary and visualization
 
 Summarize variables `gender` and `anchor_age` by graphics, and explain any patterns you see.
+```{r}
+# Import the CSV file as a tibble
+patients_tble <- read_csv("~/mimic/hosp/patients.csv.gz")
+
+# Summary of gender as a bar chart
+ggplot(patients_tble, aes(x = gender)) +
+  geom_bar(fill = "steelblue") +
+  labs(title = "Distribution of Gender", x = "Gender", y = "Count") +
+  theme_minimal()
+
+# Summary of anchor_age as a histogram
+ggplot(patients_tble, aes(x = anchor_age)) +
+  geom_histogram(fill = "tomato", bins = 30, color = "black") +
+  labs(title = "Distribution of Anchor Age", x = "Anchor Age", y = "Count") +
+  theme_minimal()
+
+# Boxplot for anchor_age by gender
+ggplot(patients_tble, aes(x = gender, y = anchor_age, fill = gender)) +
+  geom_boxplot() +
+  labs(title = "Age Distribution by Gender", x = "Gender", y = "Anchor Age") +
+  theme_minimal()
+```
+According to the bar chart of gender distribution, we can see a relatively balanced number of male and female subjects, suggesting that the data is representative across genders without a significant skew.
+
+According to the histogram of anchor age, the distribution is not uniform with a notable spike in younger groups, particularly around early adulthood (20–30 years old) and some fluctuation across the middle to elder aged groups (around 40 to 85 years old). 
+
+According to the boxplot of age distribution by gender, both genders shows similar median anchor ages. The IQR range of male is slightly smaller than that of female.  
 
 ## Q5. Lab results
 
