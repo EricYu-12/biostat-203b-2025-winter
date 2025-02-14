@@ -489,12 +489,73 @@ We are interested in the vitals for ICU patients: heart rate (220045), systolic 
 ![](chartevents_tble.png)
 
 Hint: Use the Parquet format you generated in Homework 2. For reproducibility, make `chartevents_pq` folder available at the current working directory, for example, by a symbolic link.
-
+**Solution:**
+Step 1: Create the parquet file of chartevents
 ```{r}
 #| eval: false
-
+chartevents <- arrow::open_dataset("~/mimic/icu/chartevents.csv", 
+                                      format = "csv")
+arrow::write_dataset(chartevents, path = "chartevents_pq", format = "parquet")
+dataset_parquet <- arrow::open_dataset ("chartevents_pq", format = "parquet")
 ```
+Step 2: Extract the vitals we are interested in from both files
+```{r}
+d_items_tble <- arrow::open_dataset("~/mimic/icu/d_items.csv.gz", 
+                                    format = "csv") %>%
+  
+  # filter the rows to keep the itemid for the vitals of interest
+  filter(itemid %in% c(220045, 220179, 220180, 223761, 220210)) %>%
+  collect() %>%
+  print(width = Inf)
 
+chartevents <- arrow::open_dataset('./chartevents_pq', format = "parquet") %>%
+  select(subject_id, itemid, charttime, valuenum) %>%
+  
+  # filter the rows to keep the itemid for the vitals of interest
+  filter(itemid %in% c(220045, 220179, 220180, 223761, 220210)) %>%
+  filter(subject_id %in% icustays_tble$subject_id) %>% collect() %>%
+  print(width = Inf)
+```
+Step 3:Finish up the question
+```{r}
+if (file.exists("chartevents_tble.rds")) {
+  chartevents_tble <- read_rds("chartevents_tble.rds") 
+  print(chartevents_tble, width = Inf)
+
+} else {
+  
+  # Ensure icustays_tble has only one row per subject_id
+  icustays_tble_unique <- icustays_tble %>%
+    group_by(subject_id) %>%
+    arrange(intime) %>%  
+    slice_head(n = 1) %>%
+    ungroup()
+
+  # Ensure chartevents has only one measurement per subject_id, stay_id, and itemid
+  chartevents_unique <- chartevents %>%
+    group_by(subject_id, stay_id, itemid) %>% arrange(charttime) %>%
+    slice_head(n = 1) %>% ungroup()
+
+  chartevents_tble <- chartevents_unique %>%
+    left_join(icustays_tble_unique, by = c("subject_id", "stay_id")) %>%
+    filter(charttime >= intime, charttime <= outtime) %>%
+    
+    # Step 6: Remove unnecessary columns
+    select(-charttime, -intime, -outtime) %>%
+    
+    pivot_wider(names_from = itemid, values_from = valuenum) %>%
+    
+    # Rename the columns
+    rename(
+      heart_rate = `220045`, systolic_non_invasive_blood_pressure = `220179`, 
+      diastolic_non_invasive_blood_pressure = `220180`, 
+      temperature_in_Fahrenheit = `223761`, respiratory_rate = `220210`
+    )
+
+  write_rds(chartevents_tble, "chartevents_tble.rds")
+  print(chartevents_tble, width = Inf)
+}
+```
 ## Q7. Putting things together
 
 Let us create a tibble `mimic_icu_cohort` for all ICU stays, where rows are all ICU stays of adults (age at `intime` \>= 18) and columns contain at least following variables
