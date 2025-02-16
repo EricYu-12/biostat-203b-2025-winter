@@ -87,44 +87,115 @@ zcat < ~/mimic/hosp/d_icd_diagnoses.csv.gz | head
 
 Step 3: Get the required information for patient 10063848
 ```{r}
-#| eval: false
+subject_id <- 10063848
 
-target_id <- 10063848
+# Get race info
+race <- read_csv("~/mimic/hosp/admissions.csv.gz") %>%
+  filter(subject_id == !!subject_id) %>%
+  distinct(race)
 
-# read the d_items.csv.gz
-items <- read_csv("~/mimic/icu/d_items.csv.gz") %>%
-  dplyr::select(c(itemid, label, abbreviation)) %>%
-  
-  # filter the abbreviation with HR, NBPd, NBPs, RR, Temperature F
-  dplyr::filter(abbreviation %in% c("HR", "NBPd", "NBPs", "RR",
-                                    "Temperature F"))
+# Get demographic info
+demographics <- read_csv("~/mimic/hosp/patients.csv.gz") %>%
+  filter(subject_id == !!subject_id) %>%
+  mutate(race = tolower(race$race))  
 
-# define the file path of chartevents.csv
-file_path_chartevents <- "~/mimic/icu/chartevents.csv"
+# Get top 3 diagnoses info
+top_3_diagnoses <- read_csv("~/mimic/hosp/diagnoses_icd.csv.gz") %>%
+  filter(subject_id == !!subject_id) %>%
+  left_join(read_csv("~/mimic/hosp/d_icd_diagnoses.csv.gz"), 
+            by = c("icd_code" = "icd_code", "icd_version" = "icd_version")) %>%
+  group_by(long_title) %>% 
+  summarise(freq = n()) %>% 
+  arrange(desc(freq)) %>% 
+  slice(1:3) 
 
-# read the chartevents.csv.gz
-chartevents <- arrow::open_dataset(file_path_chartevents, 
-                                   format = "csv") %>%
-  
-  # filter out ids number of interested vitals
-  dplyr::filter(itemid %in% c(220045, 220179, 
-                              220180, 220210, 
-                              223761)) %>%
-  
-  # filter the patient with subject_id 10013310
-  dplyr::filter(subject_id == target_id) %>%
-  
-  # exclude unnecessary columns
-  dplyr::select(-c(hadm_id, caregiver_id, storetime, warning)) %>%
-  collect() %>%
-  left_join(items, by = c("itemid" = "itemid"))
+# Get ADT info
+ADT <- read_csv("~/mimic/hosp/transfers.csv.gz") %>%
+  filter(subject_id == !!subject_id) %>%
+  filter(!is.na(careunit)) %>%
+  filter(!is.na(intime) & !is.na(outtime)) %>%  # Fix: Remove missing intime/outtime rows
+  mutate(segment_thickness = if_else(str_detect(careunit, "Care Unit"), 10, 8))
+
+# Get lab events info
+labevents <- arrow::open_dataset('./labevents_pq', format = "parquet") %>%
+  dplyr::select(subject_id, charttime) %>%
+  dplyr::filter(subject_id == !!subject_id) %>%
+  dplyr::distinct(subject_id, charttime) %>%
+  collect()
+
+# Get procedures info
+procedures <- read_csv("~/mimic/hosp/procedures_icd.csv.gz") %>%
+  filter(subject_id == !!subject_id) %>%
+  left_join(read_csv("~/mimic/hosp/d_icd_procedures.csv.gz"), 
+            by = c("icd_code" = "icd_code", "icd_version" = "icd_version"))
+
 ```
 
 Step 4: Make the required plot
 ```{r}
+# Create the ADT history plot
+ADT_history <- ggplot() +
+  
+  # Specify x-axis limits dynamically
+  scale_x_datetime(name = "Calendar Time", 
+                   limits = c(min(ADT$intime) - days(1), max(ADT$outtime))) +
+  
+  # Specify y-axis with 3 levels
+  scale_y_discrete(name = NULL, 
+                   limits = c("Procedure", "Lab", "ADT")) + 
+  
+  # Add procedure events
+  geom_point(data = procedures, 
+             aes(x = as.POSIXct(chartdate), 
+                 y = "Procedure", 
+                 shape = sub(",.*", "", long_title)), 
+             size = 3) + 
+  
+  # Manually set the number of shapes according to the number of procedure titles
+  scale_shape_manual(values = c(1:n_distinct(procedures$long_title))) +
+  
+  # Add lab events
+  geom_point(data = labevents, 
+             aes(x = charttime, y = "Lab"), 
+             shape = 3, size = 2) +
+  
+  # Add ADT events
+  geom_segment(data = ADT, 
+               aes(x = intime, 
+                   xend = outtime, 
+                   y = "ADT", 
+                   yend = "ADT", 
+                   color = careunit, 
+                   linewidth = segment_thickness)) +  # Use linewidth instead of size
+  
+  # Set legend position and arrangement
+  theme_bw() +
+  theme(legend.position = "bottom", 
+        legend.box = "vertical", 
+        legend.key.size = unit(0, "pt"),
+        legend.text = element_text(size = 7)) +
+  
+  # Set legend titles and arrangement
+  guides(color = guide_legend(title = "Care Unit", 
+                              ncol = 3,
+                              keywidth = 1),
+         shape = guide_legend(title = "Procedure", 
+                              ncol = 2),
+         size = "none") +  # Fix: Change FALSE to "none"
+  
+  # Add patient information as title and subtitle
+  labs(title = paste("Patient", demographics$subject_id[1], ", ",
+                     demographics$gender[1], ", ",
+                     demographics$anchor_age[1], "years old, ",
+                     demographics$race[1]),
+       subtitle = paste(top_3_diagnoses$long_title[1],
+                        top_3_diagnoses$long_title[2],
+                        top_3_diagnoses$long_title[3],
+                        sep = "\n"))
 
+# Print the plot
+print(ADT_history)
 ```
-
 ### Q1.2 ICU stays
 
 ICU stays are a subset of ADT history. This figure shows the vitals of the patient `10001217` during ICU stays. The x-axis is the calendar time, and the y-axis is the value of the vital. The color of the line represents the type of vital. The facet grid shows the abbreviation of the vital and the stay ID.
@@ -253,62 +324,74 @@ Summarize the following information by graphics and explain any patterns you see
 
 According to the [MIMIC-IV documentation](https://mimic.mit.edu/docs/iv/about/concepts/#date-shifting),
 
-All dates in the database have been shifted to protect patient confidentiality. Dates will be internally consistent for the same patient, but randomly distributed in the future. Dates of birth which occur in the present time are not true dates of birth. Furthermore, dates of birth which occur before the year 1900 occur if the patient is older than 89. In these cases, the patient’s age at their first admission has been fixed to 300. **Solution:**
+All dates in the database have been shifted to protect patient confidentiality. Dates will be internally consistent for the same patient, but randomly distributed in the future. Dates of birth which occur in the present time are not true dates of birth. Furthermore, dates of birth which occur before the year 1900 occur if the patient is older than 89. In these cases, the patient’s age at their first admission has been fixed to 300. 
 
+**Solution:**
 ```{r}
 # Convert datetime columns to proper format
 admissions_tble <- admissions_tble %>%
   mutate(admittime = as.POSIXct(admittime, format="%Y-%m-%d %H:%M:%S"),
          dischtime = as.POSIXct(dischtime, format="%Y-%m-%d %H:%M:%S"))
 
-# ---- 1. Number of Admissions per Patient ----
+# 1. Number of Admissions per Patient 
 admissions_per_patient <- admissions_tble %>%
   count(subject_id)
 
 # Plot the distribution of admissions per patient
 ggplot(admissions_per_patient, aes(x = n)) +
-  geom_bar(fill = "blue", color = "black") +
+  geom_bar(fill = "skyblue", color = "black") +
   labs(title = "Number of Admissions per Patient",
        x = "Admissions",
        y = "Number of Patients") +
   theme_minimal()
+```
+Based on the graph, we see that most of the patients have only 1 admission but some have more than one admissions. This situation could be explained by most of the patients have been treated well and recovered so that they won't need to go back to the hospital again, but some patients might experienced chronic diseases that cannot be cured at a single hospital visit, or some patients suffered from disease relapsing and would have to be readmitted to the hospital.
 
-# ---- 2. Admission Hour Analysis ----
-admissions_tble <- admissions_tble %>%
-  mutate(admission_hour = hour(admittime))
+```{r}
+# 2. Admission Hour Analysis
+admissions_tble_admithour <- admissions_tble %>%
+  mutate(admittime = with_tz(admittime, "UTC"))
 
 # Plot admission hour distribution
-ggplot(admissions_tble, aes(x = admission_hour)) +
-  geom_bar(fill = "red", color = "black") +
-  labs(title = "Admission Hour Distribution",
-       x = "Hour of Admission",
-       y = "Number of Admissions") +
+admissions_tble_admithour %>%
+  ggplot(aes(x = hour(admittime))) +
+  geom_histogram(binwidth = 1, fill = "skyblue", color = "black") +
+  labs(title = "Admission Hour",
+       x = "Admission Hour",
+       y = "Frequency") +
   theme_minimal()
+```
+Based on the graph, we can see that the the number of admissions is peaked at 0 and then drops to around 12000 till a sudden stick-out to almost 25000 at 7, then drops to 10000 again and rise at 10 again till 18 then going down again slowly after 20. The peak number of admission at 0 could be explained by the patients suffer sudden burst of acute diseases when they thought they were alright and relax. That could be the reason why we hear the sound of ambulance relatively frequently at midnight. The sitck-out at 7 could be explain by the reason that people are trying to get themselves treated as early as possible once the hospital starts their operational hour.
 
-# ---- 3. Admission Minute Analysis ----
+```{r}
+# 3. Admission Minute Analysis 
 admissions_tble <- admissions_tble %>%
   mutate(admission_minute = minute(admittime))
 
 # Plot admission minute distribution
 ggplot(admissions_tble, aes(x = admission_minute)) +
-  geom_bar(fill = "purple", color = "black") +
-  labs(title = "Admission Minute Distribution",
-       x = "Minute of Admission",
+  geom_bar(fill = "skyblue", color = "black") +
+  labs(title = "Admission Minute",
+       x = "Admission Minute",
        y = "Number of Admissions") +
   theme_minimal()
+```
+Based on the graph, we can see that while the distribution of the admission minute is mostly normal, there are some stick-outs at 0, 16, 30, and 45 minutes. The situation could be explained by some admission minutes have been rounded up or down and they happen to be cumulated around those listed certain minutes.
 
-# ---- 4. Length of Hospital Stay ----
+```{r}
+# 4. Length of Hospital Stay
 admissions_tble <- admissions_tble %>%
   mutate(length_of_stay_days = as.numeric(difftime(dischtime, admittime, units="days")))
 
 # Plot the distribution of hospital stay length
 ggplot(admissions_tble, aes(x = length_of_stay_days)) +
-  geom_histogram(binwidth = 1, fill = "green", color = "black") +
-  labs(title = "Hospital Stay Length Distribution",
+  geom_histogram(binwidth = 1, fill = "skyblue", color = "black") +
+  labs(title = "Hospital Stay Length",
        x = "Length of Stay (Days)",
        y = "Number of Patients") +
   theme_minimal()
 ```
+Based on the graph, the distribution of length of stay is highly right skewed, with most of the patients stay in the hospital for less than 10 days wiht only very few exceptions, which is nothing unusual. This could be explain by the fact that most diseases or harm can be cured within a few days and there is no reason for the hospital to keep their patients in while they do not need to be, but some patients might suffer more serious harm that they need longer time of caring at the hospital.
 
 ## Q4. `patients` data
 
