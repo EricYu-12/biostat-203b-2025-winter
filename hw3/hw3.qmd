@@ -113,7 +113,7 @@ top_3_diagnoses <- read_csv("~/mimic/hosp/diagnoses_icd.csv.gz") %>%
 ADT <- read_csv("~/mimic/hosp/transfers.csv.gz") %>%
   filter(subject_id == !!subject_id) %>%
   filter(!is.na(careunit)) %>%
-  filter(!is.na(intime) & !is.na(outtime)) %>%  # Fix: Remove missing intime/outtime rows
+  filter(!is.na(intime) & !is.na(outtime)) %>% 
   mutate(segment_thickness = if_else(str_detect(careunit, "Care Unit"), 10, 8))
 
 # Get lab events info
@@ -166,7 +166,7 @@ ADT_history <- ggplot() +
                    y = "ADT", 
                    yend = "ADT", 
                    color = careunit, 
-                   linewidth = segment_thickness)) +  # Use linewidth instead of size
+                   linewidth = segment_thickness)) +  
   
   # Set legend position and arrangement
   theme_bw() +
@@ -181,7 +181,7 @@ ADT_history <- ggplot() +
                               keywidth = 1),
          shape = guide_legend(title = "Procedure", 
                               ncol = 2),
-         size = "none") +  # Fix: Change FALSE to "none"
+         size = "none") +  
   
   # Add patient information as title and subtitle
   labs(title = paste("Patient", demographics$subject_id[1], ", ",
@@ -217,8 +217,6 @@ zcat < ~/mimic/icu/d_items.csv.gz | head
 ```
 Step 3: prepare the data needed
 ```{r}
-#| eval: false
-# Define target subject_id
 target_id <- 10063848
 
 # Read d_items.csv.gz to get vital sign labels
@@ -227,15 +225,15 @@ items <- read_csv("~/mimic/icu/d_items.csv.gz") %>%
   dplyr::filter(abbreviation %in% c("HR", "NBPd", "NBPs", "RR", 
                                     "Temperature F"))
 
-# Open chartevents.csv with Arrow for efficient processing
+# Read in chartevents.csv with Arrow 
 chartevents_data <- arrow::open_dataset("~/mimic/icu/chartevents.csv", 
                                         format = "csv")
 
 # Filter and collect only the relevant data
 chart_tibble <- chartevents_data %>%
   filter(subject_id == target_id,  
-         itemid %in% c(220045, 220181, 220179, 223761, 220210)) %>%
-  select(subject_id, charttime, itemid, valuenum) %>%
+         itemid %in% c(220045, 220180, 220179, 223761, 220210)) %>%
+  select(subject_id, stay_id, itemid, charttime, valuenum) %>%
   collect()  
 
 # Merge with items to get vital sign labels
@@ -244,7 +242,26 @@ chart_tibble <- chart_tibble %>%
 ```
 Step 4: plot the plots
 ```{r}
+vitals_line_plot <- ggplot(chart_tibble, 
+                           aes(x = charttime, 
+                               y = valuenum, 
+                               color = abbreviation)) +
+  geom_point() +
+  geom_line() +
+  
+  # use facet_grid to show all 
+  # combinations of abbreviation and stay_id
+  facet_grid(abbreviation ~ stay_id, scales = "free") +
+  labs(title = paste("Patient", 
+                     chart_tibble$subject_id[1], 
+                     "ICU stays - Vitals"),
+       x = "",
+       y = "") +
+  
+  theme_light(base_size = 9) + theme(legend.position = "none") +
+  guides(x = guide_axis(n.dodge = 2)) 
 
+print(vitals_line_plot)
 ```
 ## Q2. ICU stays
 
