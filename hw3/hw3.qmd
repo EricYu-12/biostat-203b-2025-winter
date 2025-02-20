@@ -671,9 +671,35 @@ The final `mimic_icu_cohort` should have one row per ICU stay and columns for ea
 ![](mimic_icu_cohort.png) 
 
 **Solution:**
+Step 1: list all the tbles that needed for the question. Since labevents_tble and chartevents_tble are being processed by specific requirements in previous questions, they are not listed here again.
+```{r}
+icustays_tble <- arrow::open_dataset("~/mimic/icu/icustays.csv.gz",
+format = "csv") %>% collect() %>% print(width = Inf)
+```
+```{r}
+admissions_tble <- arrow::open_dataset("~/mimic/hosp/admissions.csv.gz",
+format = "csv") %>% collect() %>% print(width = Inf)
+```
+```{r}
+patients_tble <- arrow::open_dataset("~/mimic/hosp/patients.csv.gz",
+format = "csv") %>% collect() %>% print(width = Inf)
+```
 ```{r}
 
 ```
+Step 2: 
+```{r}
+mimic_icu_cohort <- icustays_tble %>%
+  left_join(admissions_tble, by = c("subject_id", "hadm_id")) %>%
+  left_join(patients_tble, by = "subject_id") %>%
+  left_join(labevents_tble, by = c("subject_id", "stay_id")) %>%
+  left_join(chartevents_tble, by = c("subject_id", "stay_id")) %>% 
+  mutate(age_intime = year(intime) - anchor_year + anchor_age) %>%
+  filter(age_intime >= 18)
+
+print(mimic_icu_cohort)
+```
+
 ## Q8. Exploratory data analysis (EDA)
 
 Summarize the following information about the ICU stay cohort `mimic_icu_cohort` using appropriate numerics or graphs:
@@ -685,3 +711,8 @@ Summarize the following information about the ICU stay cohort `mimic_icu_cohort`
 -   Length of ICU stay `los` vs the first vital measurements within the ICU stay
 
 -   Length of ICU stay `los` vs first ICU unit
+
+**Solution:**
+```{r}
+
+```
