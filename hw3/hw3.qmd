@@ -846,7 +846,6 @@ mimic_icu_cohort %>%
   filter(!is.na(los) & is.finite(los) & !is.na(age_intime)) %>%
   ggplot(aes(x = age_intime, y = los)) +
   geom_point(alpha = 0.5, color = "steelblue") + 
-  geom_smooth(method = "lm", formula = y ~ x, color = "red", se = FALSE) +  
   labs(title = "Length of ICU Stay by Age at Admission",
        x = "Age at Admission", y = "Length of ICU Stay (days)") +
   theme_minimal()
@@ -854,7 +853,7 @@ mimic_icu_cohort %>%
 
 (8.2) Length of ICU stay `los` vs the last available lab measurements before ICU stay
 ```{r}
-# prepare the variables to be used in the plot
+# get the variables which will be used to plot
 variables <- c("white_blood_cell_count", "heart_rate", "respiratory_rate", 
                "temperature_in_Fahrenheit", 
                "systolic_non_invasive_blood_pressure", 
@@ -864,7 +863,7 @@ variables <- c("white_blood_cell_count", "heart_rate", "respiratory_rate",
 
 
 # get the last lab measurements before ICU stay
-mimic_icu_cohort_select <- mimic_icu_cohort %>%
+mimic_icu_cohort_variables <- mimic_icu_cohort %>%
   select(all_of(variables), los) %>%
   filter(if_all(c(all_of(variables), los), ~ !is.na(.))) %>%  
   mutate(across(c(all_of(variables), los), 
@@ -881,7 +880,6 @@ for (variable in variables) {
   plots[[variable]] <- mimic_icu_cohort_filtered %>%
     ggplot(aes(x = !!sym(variable), y = los)) +  
     geom_point(alpha = 0.5, color = "steelblue") + 
-    geom_smooth(method = "lm", formula = y ~ x, se = FALSE, color = "red") +  
     labs(title = paste("Length of ICU Stay vs", variable),
          x = variable,
          y = "Length of ICU Stay (days)") +
@@ -892,5 +890,62 @@ print(plots)
 ```
 (8.3) Length of ICU stay los vs the first vital measurements within the ICU stay
 ```{r}
+# get the variables which will be used to plot
+variables <- c("heart_rate", "respiratory_rate", "temperature_in_Fahrenheit", 
+               "systolic_non_invasive_blood_pressure", 
+               "diastolic_non_invasive_blood_pressure")
 
+mimic_icu_cohort_variables <- mimic_icu_cohort %>%
+  select(all_of(variables), los) %>%
+  filter(if_all(all_of(variables), ~ !is.na(.)) & !is.na(los)) %>%
+  mutate(across(c(all_of(variables), los), 
+                ~ trim(., trim_proportion = 1, na.rm = TRUE)))
+
+# plot the required plots
+plots <- list()
+
+for (variable in variables) {
+  plots[[variable]] <- mimic_icu_cohort %>%
+    filter(if_all(all_of(c(variable, "los")), ~ !is.na(.))) %>%  
+    ggplot(aes(x = !!sym(variable), y = los)) +  
+    geom_point(alpha = 0.5, color = "steelblue") +  
+    labs(title = paste("Length of ICU Stay vs", variable),
+         x = variable,
+         y = "Length of ICU Stay (days)") +
+    theme_minimal()
+}
+
+print(plots)
+```
+(8.4) Length of ICU stay `los` vs first ICU unit
+```{r}
+# get summary statistics
+mimic_icu_cohort %>%
+  filter(!is.na(los) & !is.na(first_careunit)) %>%
+  group_by(first_careunit) %>%
+  summarise(
+    count = n(),
+    mean_los = mean(los, na.rm = TRUE),
+    median_los = median(los, na.rm = TRUE),
+    min_los = min(los, na.rm = TRUE),
+    max_los = max(los, na.rm = TRUE),
+    sd_los = sd(los, na.rm = TRUE),
+    iqr_los = IQR(los, na.rm = TRUE)
+  )
+
+# graph bar plot
+mimic_icu_cohort %>%
+  count(first_careunit) %>%
+  ggplot(aes(x = first_careunit, y = n, fill = first_careunit)) +
+  geom_bar(width = 1, stat = "identity", color = "white") +
+  
+  labs(title = "Proportion of ICU Stays by First ICU",
+       x = "First ICU",
+       y = "Proportion",
+       fill = "First ICU") +
+  
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +
+  theme_minimal() +
+  theme(axis.text.x = element_blank(),
+        axis.ticks.x = element_blank())
 ```
