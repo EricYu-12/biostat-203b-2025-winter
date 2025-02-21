@@ -150,14 +150,14 @@ ADT_history <- ggplot() +
              aes(x = as.POSIXct(chartdate), 
                  y = "Procedure", 
                  shape = sub(",.*", "", long_title)), 
-             size = 3) + 
+             size = 3, color = "black") + 
   
   scale_shape_manual(values = c(1:n_distinct(procedures$long_title))) +
   
   # Add lab events
   geom_point(data = labevents, 
              aes(x = charttime, y = "Lab"), 
-             shape = 3, size = 2) +
+             shape = 3, size = 2, color = "black") +
   
   # Add ADT events
   geom_segment(data = ADT, 
@@ -166,7 +166,7 @@ ADT_history <- ggplot() +
                    y = "ADT", 
                    yend = "ADT", 
                    color = careunit, 
-                   linewidth = segment_thickness)) +  
+                   )) +  
   
   # Set legend position and arrangement
   theme_bw() +
@@ -486,11 +486,10 @@ icustays_tble <- arrow::open_dataset("~/mimic/icu/icustays.csv.gz",
   collect() %>%
   print(width = Inf)
 
-dlabitems_tble <- arrow::open_dataset("~/mimic/hosp/d_labitems.csv.gz", 
-                                      format = "csv") %>%
-  filter(itemid %in% target_items) %>%
-  collect() %>%
-  print(width = Inf)
+dlabitems_tble <- read_csv("~/mimic/hosp/d_labitems.csv.gz", 
+                           show_col_types = FALSE) %>%
+                              filter(itemid %in% target_items) %>% 
+  mutate (itemid = as.integer(itemid)) %>% print(width = Inf)
 ```
 Step 2: Save the labevents.csv.gz file as a tibble and filter the rows with the the items that we are interested in and the patients in icustays_tble
 ```{r}
@@ -516,9 +515,6 @@ if (file.exists(cache_file)) {
                                        format = "csv") %>%
     select(subject_id, stay_id, intime) %>% collect() %>%
     mutate(intime = as.POSIXct(intime, format="%Y-%m-%d %H:%M:%S"))
-
-  # Load & Filter Labevents Before Collecting
-  target_items <- c(50912, 50971, 50983, 50902, 50882, 51221, 51301, 50931)
 
   labevents_data <- arrow::open_dataset("labevents_pq", format = "parquet") %>%
     filter(itemid %in% target_items) %>%
@@ -576,8 +572,9 @@ We are interested in the vitals for ICU patients: heart rate (220045), systolic 
 ![](chartevents_tble.png)
 
 Hint: Use the Parquet format you generated in Homework 2. For reproducibility, make `chartevents_pq` folder available at the current working directory, for example, by a symbolic link.
+
 **Solution:**
-Step 1: Create the parquet file of chartevents
+Step 1: Create the chartevents parquet file
 ```{r}
 #| eval: false
 chartevents <- arrow::open_dataset("~/mimic/icu/chartevents.csv", 
@@ -585,59 +582,66 @@ chartevents <- arrow::open_dataset("~/mimic/icu/chartevents.csv",
 arrow::write_dataset(chartevents, path = "chartevents_pq", format = "parquet")
 dataset_parquet <- arrow::open_dataset ("chartevents_pq", format = "parquet")
 ```
-Step 2: Extract the vitals we are interested in from both files
+Step 2: Create the d_item tibble
 ```{r}
 d_items_tble <- arrow::open_dataset("~/mimic/icu/d_items.csv.gz", 
                                     format = "csv") %>%
   filter(itemid %in% c(220045, 220179, 220180, 223761, 220210)) %>%
   collect() %>%
   print(width = Inf)
-
-chartevents <- arrow::open_dataset('./chartevents_pq', format = "parquet") %>%
-  select(subject_id, itemid, charttime, valuenum) %>%
-  filter(itemid %in% c(220045, 220179, 220180, 223761, 220210)) %>%
-  filter(subject_id %in% icustays_tble$subject_id) %>% collect() %>%
-  print(width = Inf)
 ```
-Step 3:Finish up the question
+Step 3: Define and rename vital items
 ```{r}
-if (file.exists("chartevents_tble.rds")) {
-  chartevents_tble <- read_rds("chartevents_tble.rds") 
-  print(chartevents_tble, width = Inf)
-
-} else {
-  
-  # Ensure icustays_tble has only one row per subject_id
-  icustays_tble_unique <- icustays_tble %>%
-    group_by(subject_id) %>%
-    arrange(intime) %>%  
-    slice_head(n = 1) %>%
-    ungroup()
-
-  chartevents_unique <- chartevents %>%
-    group_by(subject_id, stay_id, itemid) %>% arrange(charttime) %>%
-    slice_head(n = 1) %>% ungroup()
-
-  chartevents_tble <- chartevents_unique %>%
-    left_join(icustays_tble_unique, by = c("subject_id", "stay_id")) %>%
-    filter(charttime >= intime, charttime <= outtime) %>%
-    
-    # Step 6: Remove unnecessary columns
-    select(-charttime, -intime, -outtime) %>%
-    
-    pivot_wider(names_from = itemid, values_from = valuenum) %>%
-    
-    # Rename the columns
-    rename(
-      heart_rate = `220045`, systolic_non_invasive_blood_pressure = `220179`, 
-      diastolic_non_invasive_blood_pressure = `220180`, 
-      temperature_in_Fahrenheit = `223761`, respiratory_rate = `220210`
-    )
-
-  write_rds(chartevents_tble, "chartevents_tble.rds")
-  print(chartevents_tble, width = Inf)
-}
+vital_item_ids <- c(220045, 220179, 220180, 223761, 220210) 
+vital_items <- setNames(
+  c("heart_rate", 
+    "systolic_non_invasive_blood_pressure", 
+    "diastolic_non_invasive_blood_pressure", 
+    "temperature_fahrenheit", 
+    "respiratory_rate"),
+  vital_item_ids
+)
 ```
+Step 4: Load and process data, use storetime instead of charttime as required, and apply the average vital measurements
+```{r}
+chartevents_data <- open_dataset("chartevents_pq", format = "parquet") %>%
+  to_duckdb() %>%
+  select(subject_id, itemid, storetime, valuenum) %>%
+  filter(itemid %in% vital_item_ids) %>%
+  left_join(
+    select(icustays_tble, subject_id, stay_id, intime, outtime),
+    by = "subject_id", copy = TRUE) %>%
+  filter(storetime >= intime & storetime <= outtime) %>%
+  group_by(subject_id, stay_id, itemid, storetime) %>%
+  
+  # Apply average valuenum
+  mutate(valuenum = mean(valuenum, na.rm = TRUE)) %>%
+  ungroup() %>%
+  group_by(subject_id, stay_id, itemid) %>%
+  slice_min(order_by = storetime, n = 1) %>%
+  select(-storetime, -intime) %>%
+  ungroup() %>% pivot_wider(names_from = itemid, values_from = valuenum) %>%
+  rename_with(~ recode(., !!!vital_items)) %>%  
+  collect()
+```
+Step 5: Create and print the chartevents_tble
+```{r}
+chartevents_tble <- chartevents_data %>%
+  select(
+    subject_id,
+    stay_id,
+    heart_rate,
+    diastolic_non_invasive_blood_pressure, 
+    systolic_non_invasive_blood_pressure,
+    respiratory_rate,
+    temperature_fahrenheit
+  ) %>%
+  arrange(subject_id, stay_id) %>%
+  as_tibble()
+
+print(chartevents_tble)
+```
+
 ## Q7. Putting things together
 
 Let us create a tibble `mimic_icu_cohort` for all ICU stays, where rows are all ICU stays of adults (age at `intime` \>= 18) and columns contain at least following variables
@@ -657,12 +661,10 @@ Step 1: List all the tbles that needed for the question. Since labevents_tble an
 ```{r}
 icustays_tble <- arrow::open_dataset("~/mimic/icu/icustays.csv.gz",
 format = "csv") %>% collect() %>% print(width = Inf)
-```
-```{r}
+
 admissions_tble <- arrow::open_dataset("~/mimic/hosp/admissions.csv.gz",
 format = "csv") %>% collect() %>% print(width = Inf)
-```
-```{r}
+
 patients_tble <- arrow::open_dataset("~/mimic/hosp/patients.csv.gz",
 format = "csv") %>% collect() %>% print(width = Inf)
 ```
@@ -835,10 +837,11 @@ mimic_icu_cohort %>%
 (8.2) Length of ICU stay `los` vs the last available lab measurements before ICU stay
 ```{r}
 # get the variables which will be used to plot
-variables <- c("white_blood_cell_count", "heart_rate", "respiratory_rate", 
-               "temperature_in_Fahrenheit", 
-               "systolic_non_invasive_blood_pressure", 
-               "diastolic_non_invasive_blood_pressure", "potassium", "sodium", 
+variables <- c("white_blood_cell_count", "heart_rate", 
+    "systolic_non_invasive_blood_pressure", 
+    "diastolic_non_invasive_blood_pressure", 
+    "temperature_fahrenheit", 
+    "respiratory_rate", "potassium", "sodium", 
                "chloride", "bicarbonate", "hematocrit", 
                "white_blood_cell_count", "glucose" )
 
@@ -872,7 +875,7 @@ print(plots)
 (8.3) Length of ICU stay los vs the first vital measurements within the ICU stay
 ```{r}
 # get the variables which will be used to plot
-variables <- c("heart_rate", "respiratory_rate", "temperature_in_Fahrenheit", 
+variables <- c("heart_rate", "respiratory_rate", "temperature_fahrenheit", 
                "systolic_non_invasive_blood_pressure", 
                "diastolic_non_invasive_blood_pressure")
 
