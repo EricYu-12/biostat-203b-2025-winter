@@ -152,7 +152,6 @@ ADT_history <- ggplot() +
                  shape = sub(",.*", "", long_title)), 
              size = 3) + 
   
-  # Manually set the number of shapes according to the number of procedure titles
   scale_shape_manual(values = c(1:n_distinct(procedures$long_title))) +
   
   # Add lab events
@@ -194,7 +193,6 @@ ADT_history <- ggplot() +
                         top_3_diagnoses$long_title[3],
                         sep = "\n"))
 
-# Print the plot
 print(ADT_history)
 ```
 ### Q1.2 ICU stays
@@ -211,12 +209,8 @@ Step 1: decompress chartevents.csv.gz
 #| eval: false
 gzip -d -k ~/mimic/icu/chartevents.csv.gz
 ```
-Step 2: take a peek at the data files
-```{bash}
-zcat < ~/mimic/icu/chartevents.csv.gz | head
-zcat < ~/mimic/icu/d_items.csv.gz | head
-```
-Step 3: prepare the data needed
+
+Step 2: prepare the data
 ```{r}
 target_id <- 10063848
 
@@ -226,11 +220,9 @@ items <- read_csv("~/mimic/icu/d_items.csv.gz") %>%
   dplyr::filter(abbreviation %in% c("HR", "NBPd", "NBPs", "RR", 
                                     "Temperature F"))
 
-# Read in chartevents.csv with Arrow 
 chartevents_data <- arrow::open_dataset("~/mimic/icu/chartevents.csv", 
                                         format = "csv")
 
-# Filter and collect only the relevant data
 chart_tibble <- chartevents_data %>%
   filter(subject_id == target_id,  
          itemid %in% c(220045, 220180, 220179, 223761, 220210)) %>%
@@ -250,8 +242,6 @@ vitals_line_plot <- ggplot(chart_tibble,
   geom_point() +
   geom_line() +
   
-  # use facet_grid to show all 
-  # combinations of abbreviation and stay_id
   facet_grid(abbreviation ~ stay_id, scales = "free") +
   labs(title = paste("Patient", 
                      chart_tibble$subject_id[1], 
@@ -284,7 +274,6 @@ icustays_tble <- open_dataset("~/mimic/icu/icustays.csv.gz",
 ### Q2.2 Summary and visualization
 
 How many unique `subject_id`? Can a `subject_id` have multiple ICU stays? Summarize the number of ICU stays per `subject_id` by graphs.
-
 ```{r}
 # Count the number of unique subject_id
 num_unique_subjects <- icustays_tble %>%
@@ -304,7 +293,7 @@ cat("Maximum ICU stays for a single subject_id:", max_stays, "\n")
 
 # Plot the distribution of ICU stays per subject_id
 ggplot(icu_stays_per_subject, aes(x = num_stays)) +
-  geom_bar(fill = "blue", color = "black") +
+  geom_bar(fill = "skyblue", color = "black") +
   labs(title = "Distribution of ICU Stays per Subject",
        x = "Number of ICU Stays",
        y = "Count of Subjects") +
@@ -312,7 +301,7 @@ ggplot(icu_stays_per_subject, aes(x = num_stays)) +
 
 ```
 
-Yes, a single subject_id can have multiple stays and the maximum ICU stays for a single subject_id is 41.
+There are 65366 unique subject_id. A single subject_id can have multiple stays and the maximum ICU stays for a single subject_id is 41.
 
 ## Q3. `admissions` data
 
@@ -324,8 +313,9 @@ zcat < ~/mimic/hosp/admissions.csv.gz | head
 
 ### Q3.1 Ingestion
 
-Import `admissions.csv.gz` as a tibble `admissions_tble`. **Solution:**
+Import `admissions.csv.gz` as a tibble `admissions_tble`.
 
+**Solution:**
 ```{r}
 admissions_tble <- open_dataset("~/mimic/hosp/admissions.csv.gz",
   format = "csv") %>% collect()
@@ -363,7 +353,7 @@ ggplot(admissions_per_patient, aes(x = n)) +
        y = "Number of Patients") +
   theme_minimal()
 ```
-Based on the graph, we see that most of the patients have only 1 admission but some have more than one admissions. This situation could be explained by most of the patients have been treated well and recovered so that they won't need to go back to the hospital again, but some patients might experienced chronic diseases that cannot be cured at a single hospital visit, or some patients suffered from disease relapsing and would have to be readmitted to the hospital.
+Based on the graph, we see that most of the patients have only 1 admission but some have more than one admissions and there are some extreme cases of over 125 stays. This situation could be explained by most of the patients have been treated well and recovered so that they won't need to go back to the hospital again, but some patients might experienced more serious diseases that cannot be cured within a few hospital visits, or some patients suffered from chronic disease or disease relapsing and would have to be readmitted to the hospital.
 
 ```{r}
 # 2. Admission Hour Analysis
@@ -379,7 +369,7 @@ admissions_tble_admithour %>%
        y = "Frequency") +
   theme_minimal()
 ```
-Based on the graph, we can see that the the number of admissions is peaked at 0 and then drops to around 12000 till a sudden stick-out to almost 25000 at 7, then drops to 10000 again and rise at 10 again till 18 then going down again slowly after 20. The peak number of admission at 0 could be explained by the patients suffer sudden burst of acute diseases when they thought they were alright and relax. That could be the reason why we hear the sound of ambulance relatively frequently at midnight. The sitck-out at 7 could be explain by the reason that people are trying to get themselves treated as early as possible once the hospital starts their operational hour.
+Based on the graph, we can see that the the number of admissions is peaked at 0 and then drops to around 12000 till a sudden stick-out to almost 25000 at 7, then drops again till a rise appears at 10 again till 18 then remain relatively stable after that. Some unusual things can be observed and explained. The peak number of admission at 0 could be explained by the patients suffer sudden burst of acute diseases when they thought they were alright and relax. That could be the reason why we hear the sound of ambulance relatively frequently at midnight. The sitck-out at 7 could be explained by the reason that people are trying to get themselves treated as early as possible once the hospital opens so that they could avoid the crowds.
 
 ```{r}
 # 3. Admission Minute Analysis 
@@ -394,7 +384,7 @@ ggplot(admissions_tble, aes(x = admission_minute)) +
        y = "Number of Admissions") +
   theme_minimal()
 ```
-Based on the graph, we can see that while the distribution of the admission minute is mostly normal, there are some stick-outs at 0, 16, 30, and 45 minutes. The situation could be explained by some admission minutes have been rounded up or down and they happen to be cumulated around those listed certain minutes.
+Based on the graph, we can see that while the distribution of the admission minute is mostly normal, there are some unusual stick-outs in frequencies at 0, 16, 30, and 45 minutes. The situation could be explained by some admission minutes have been rounded up or down and they happen to be cumulated at those listed certain minutes.
 
 ```{r}
 # 4. Length of Hospital Stay
@@ -409,7 +399,7 @@ ggplot(admissions_tble, aes(x = length_of_stay_days)) +
        y = "Number of Patients") +
   theme_minimal()
 ```
-Based on the graph, the distribution of length of stay is highly right skewed, with most of the patients stay in the hospital for less than 10 days wiht only very few exceptions, which is nothing unusual. This could be explain by the fact that most diseases or harm can be cured within a few days and there is no reason for the hospital to keep their patients in while they do not need to be, but some patients might suffer more serious harm that they need longer time of caring at the hospital.
+Based on the graph, the distribution of length of stay is highly right skewed, with most of the patients stay in the hospital for less than 10 days wiht only very few exceptions, which is normal. This could be explain by the fact that most diseases or harm can be cured within a few days and there is no reason for the hospital to keep their patients in while they do not need to be, but some patients might suffer more serious harm that they need longer time of caring at the hospital.
 
 ## Q4. `patients` data
 
@@ -431,35 +421,41 @@ patients_tble <- open_dataset(sources = "~/mimic/hosp/patients.csv.gz",
 ### Q4.2 Summary and visualization
 
 Summarize variables `gender` and `anchor_age` by graphics, and explain any patterns you see.
-
+Step1: create the patients_tble
 ```{r}
 # Import the CSV file as a tibble
 patients_tble <- read_csv("~/mimic/hosp/patients.csv.gz")
-
+```
+Step 2: create bar charts to summarize gender info
+```{r}
 # Summary of gender as a bar chart
 ggplot(patients_tble, aes(x = gender)) +
   geom_bar(fill = "steelblue") +
   labs(title = "Distribution of Gender", x = "Gender", y = "Count") +
   theme_minimal()
+```
+According to the bar chart of gender distribution, we can see a relatively balanced number of male and female subjects with slightly more females than males, suggesting that the data is representative across genders without a significant skew.
 
+Step 3: create histogram and boxplot to summarize anchor_age
+```{r}
 # Summary of anchor_age as a histogram
-ggplot(patients_tble, aes(x = anchor_age)) +
-  geom_histogram(fill = "tomato", bins = 30, color = "black") +
-  labs(title = "Distribution of Anchor Age", x = "Anchor Age", y = "Count") +
-  theme_minimal()
+patients_tble %>% ggplot(aes(x = anchor_age)) +
+geom_histogram(binwidth = 1, fill = "skyblue", color = "black") +
+labs(title = "Distribution of Anchor Age",
+     x = "Anchor Age",
+     y = "Frequency") +
+     theme_minimal()
+```
+According to the histogram, the frequency of anchor_age fluctuates across the ages, first peaks at around 20, then decreases and rises again at around 45 till drops again after 62 years old. A sudden peak appears at around 90. The distribution of data suggests that there different age groups are covered in the dataset. The reason why such distribution pattern occur could be that people at certain age ranges might require more hospital care. For instance, younger populations (around 18) might more likely to suffer from disease because of under developed immune systems and slowly become stronger so that less hospital cares are needed in later time. Once pass 50 years old, the older age populations will need more health carings since the body functions are reducing until they are not willing to go to hospital because of the trouble. A sudden peak in frequency at around 90 years old people might due to the reason that their lives are a criticle point that hospital cares are necessary. 
 
-# Boxplot for anchor_age by gender
+```{r}
+# Summary of anchor_age group by gender as a boxplot
 ggplot(patients_tble, aes(x = gender, y = anchor_age, fill = gender)) +
   geom_boxplot() +
   labs(title = "Age Distribution by Gender", x = "Gender", y = "Anchor Age") +
   theme_minimal()
 ```
-
-According to the bar chart of gender distribution, we can see a relatively balanced number of male and female subjects, suggesting that the data is representative across genders without a significant skew.
-
-According to the histogram of anchor age, the distribution is not uniform with a notable spike in younger groups, particularly around early adulthood (20–30 years old) and some fluctuation across the middle to elder aged groups (around 40 to 85 years old).
-
-According to the boxplot of age distribution by gender, both genders shows similar median anchor ages. The IQR range of male is slightly smaller than that of female.
+According to the boxplot of age distribution by gender, both genders shows similar median anchor ages, with males have slightly older anchor age than females. The IQR range of male is slightly smaller than that of female. This suggests that some differences exist in the age that males or females need hospitabl care, showing that males and females are different in somatic functions and the needs for hosptital cares.
 
 ## Q5. Lab results
 
@@ -480,21 +476,16 @@ We are interested in the lab measurements of creatinine (50912), potassium (5097
 ![](labevents_tble.png) Hint: Use the Parquet format you generated in Homework 2. For reproducibility, make `labevents_pq` folder available at the current working directory `hw3`, for example, by a symbolic link.
 
 **Solution:**
-Step 1: Save the icustays.csv.gz, d_labitems.csv.gz files (including the lab measurement that we are interested in), and labevents.csv.gz as tibbles  
+Step 1: Save the icustays.csv.gz, d_labitems.csv.gz (including the lab measurement that we are interested in), and labevents.csv.gz files as tibbles  
 ```{r}
 # define the target items
-target_items <- c(50912, 50971, 
-                  50983, 50902, 
-                  50882, 51221, 
-                  51301, 50931)
-
-# load the icustays.csv.gz file
+target_items <- c(50912, 50971, 50983, 50902, 50882, 51221,  51301, 50931)
+                  
 icustays_tble <- arrow::open_dataset("~/mimic/icu/icustays.csv.gz", 
                                      format = "csv") %>%
   collect() %>%
   print(width = Inf)
 
-# load the d_labitems.csv.gz file
 dlabitems_tble <- arrow::open_dataset("~/mimic/hosp/d_labitems.csv.gz", 
                                       format = "csv") %>%
   filter(itemid %in% target_items) %>%
@@ -503,9 +494,7 @@ dlabitems_tble <- arrow::open_dataset("~/mimic/hosp/d_labitems.csv.gz",
 ```
 Step 2: Save the labevents.csv.gz file as a tibble and filter the rows with the the items that we are interested in and the patients in icustays_tble
 ```{r}
-labevents_tble <- arrow::open_dataset('labevents_pq', 
-                                 format = "parquet") %>%
-  # select the columns of interest
+labevents_tble <- arrow::open_dataset('labevents_pq',  format = "parquet") %>%
   select(subject_id, itemid, storetime, valuenum) %>%
   filter(itemid %in% target_items) %>%
   filter(subject_id %in% icustays_tble$subject_id) %>%
@@ -563,10 +552,7 @@ if (file.exists(cache_file)) {
            white_blood_cell_count = `51301`, 
            glucose = `50931`)
 
-  # Save the final table for future use
   write_rds(labevents_tble, cache_file)
-
-  # Print the final processed table
   print(labevents_tble, width = Inf)
 }
 ```
@@ -603,16 +589,12 @@ Step 2: Extract the vitals we are interested in from both files
 ```{r}
 d_items_tble <- arrow::open_dataset("~/mimic/icu/d_items.csv.gz", 
                                     format = "csv") %>%
-  
-  # filter the rows to keep the itemid for the vitals of interest
   filter(itemid %in% c(220045, 220179, 220180, 223761, 220210)) %>%
   collect() %>%
   print(width = Inf)
 
 chartevents <- arrow::open_dataset('./chartevents_pq', format = "parquet") %>%
   select(subject_id, itemid, charttime, valuenum) %>%
-  
-  # filter the rows to keep the itemid for the vitals of interest
   filter(itemid %in% c(220045, 220179, 220180, 223761, 220210)) %>%
   filter(subject_id %in% icustays_tble$subject_id) %>% collect() %>%
   print(width = Inf)
@@ -632,7 +614,6 @@ if (file.exists("chartevents_tble.rds")) {
     slice_head(n = 1) %>%
     ungroup()
 
-  # Ensure chartevents has only one measurement per subject_id, stay_id, and itemid
   chartevents_unique <- chartevents %>%
     group_by(subject_id, stay_id, itemid) %>% arrange(charttime) %>%
     slice_head(n = 1) %>% ungroup()
