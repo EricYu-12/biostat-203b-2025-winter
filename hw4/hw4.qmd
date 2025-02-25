@@ -77,7 +77,10 @@ icustays_tble <- tbl(con_bq, "icustays") |>
 Connect to the `admissions` table.
 ```{r}
 # # TODO
-# admissions_tble <- 
+admissions_tble <- tbl(con_bq, "admissions") |>
+  arrange(subject_id, hadm_id) |>
+  # show_query() |>
+  print(width = Inf)
 ```
 
 ### Q1.4 `patients` data
@@ -85,7 +88,9 @@ Connect to the `admissions` table.
 Connect to the `patients` table.
 ```{r}
 # # TODO
-# patients_tble <-
+patients_tble <- tbl(con_bq, "patients") |>
+  # show_query() |>
+  print(width = Inf)
 ```
 
 ### Q1.5 `labevents` data
