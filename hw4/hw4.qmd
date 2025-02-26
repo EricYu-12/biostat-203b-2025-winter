@@ -30,6 +30,9 @@ library(DBI)
 library(gt)
 library(gtsummary)
 library(tidyverse)
+library(tidyr)
+library(dplyr)
+library(readr)
 ```
 
 ## Q1. Compile the ICU cohort in HW3 from the Google BigQuery database 
@@ -96,9 +99,38 @@ patients_tble <- tbl(con_bq, "patients") |>
 ### Q1.5 `labevents` data
 
 Connect to the `labevents` table and retrieve a subset that only contain subjects who appear in `icustays_tble` and the lab items listed in HW3. Only keep the last lab measurements (by `storetime`) before the ICU stay and pivot lab items to become variables/columns. Write all steps in _one_ chain of pipes.
+**Solution:**
+Step 1: Connect to labevents table
 ```{r}
-# # TODO
-# labevents_tble <- 
+labevents_tble <- tbl(con_bq, "labevents") %>%
+  show_query() %>%
+  print(width = Inf)
+```
+
+Step 2: Connect d_labitems table and filter it
+```{r}
+# Define target_items
+target_items <- c(50912, 50971, 50983, 50902, 50882, 51221,  51301, 50931)
+
+# Filter the table
+d_labitems_tble <- tbl(con_bq, "d_labitems") %>%
+  filter(itemid %in% target_items) %>%
+  mutate(itemid = as.integer(itemid))
+
+d_labitems_tble
+```
+Step 3: Filter labevents table with the target items
+```{r}
+labevents_tble <- tbl(con_bq, "labevents") %>%
+  select(subject_id, itemid, storetime, valuenum) %>%
+  filter(itemid %in% target_items) %>%
+  inner_join(select(tbl(con_bq, "icustays"), subject_id), 
+             by = "subject_id") %>%  
+  print(width = Inf)  
+```
+
+```{r}
+
 ```
 
 ### Q1.6 `chartevents` data
@@ -106,7 +138,9 @@ Connect to the `labevents` table and retrieve a subset that only contain subject
 Connect to `chartevents` table and retrieve a subset that only contain subjects who appear in `icustays_tble` and the chart events listed in HW3. Only keep the first chart events (by `storetime`) during ICU stay and pivot chart events to become variables/columns. Write all steps in _one_ chain of pipes. Similary to HW3, if a vital has multiple measurements at the first `storetime`, average them.
 ```{r}
 # # TODO
-# chartevents_tble <- 
+chartevents_tble <- tbl(con_bq, "chartevents") |>
+  # show_query() |>
+  print(width = Inf)
 ```
 
 ### Q1.7 Put things together
