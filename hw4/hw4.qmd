@@ -100,38 +100,23 @@ patients_tble <- tbl(con_bq, "patients") |>
 
 Connect to the `labevents` table and retrieve a subset that only contain subjects who appear in `icustays_tble` and the lab items listed in HW3. Only keep the last lab measurements (by `storetime`) before the ICU stay and pivot lab items to become variables/columns. Write all steps in _one_ chain of pipes.
 **Solution:**
-Step 1: Connect to labevents table
 ```{r}
-labevents_data <- tbl(con_bq, "labevents") %>%
-  show_query() %>%
-  print(width = Inf)
-```
-
-Step 2: Connect d_labitems table and filter it
-```{r}
-# Define target_items
-target_items <- c(50912, 50971, 50983, 50902, 50882, 51221,  51301, 50931)
-
-# Filter the table
-d_labitems_tble <- tbl(con_bq, "d_labitems") %>%
-  filter(itemid %in% target_items) %>%
-  mutate(itemid = as.integer(itemid))
-
-d_labitems_tble
-```
-Step 3: Filter labevents table with the target items and create the labevents_tble
-```{r}
-labevents_tble <- labevents_data |>
+labevents_tble <- tbl(con_bq, "labevents") |>
   
   # Select relevant columns
   select(subject_id, itemid, storetime, valuenum) |>
   
-  # Filter to include only items of interest
-  inner_join(select(d_labitems_tble, itemid), by = "itemid") |>
+  # Join d_labitems table and Filter to include only items of interest
+  inner_join(select(tbl(con_bq, "d_labitems") %>%
+  filter(itemid %in% c(50912, 50971, 50983, 50902, 
+                       50882, 51221,  51301, 50931)) %>%
+  mutate(itemid = as.integer(itemid)), itemid), by = "itemid") |>
   
-  # Join ICU stays table
+  # Join icustays table
   left_join(
-    select(icustays_tble, subject_id, stay_id, intime),
+    select(tbl(con_bq, "icustays") |>
+  arrange(subject_id, hadm_id, stay_id), 
+  subject_id, stay_id, intime),
     by = c("subject_id"),
     copy = TRUE) |>
 
@@ -164,8 +149,8 @@ labevents_tble <- labevents_data |>
     White_Blood_Cells = `51301`
   ) |>
   
-  # Remove old itemid columns (optional, if you want to keep only renamed columns)
-  select(-`50882`, -`50902`, -`50912`, -`50931`, -`50971`, -`50983`, -`51221`, -`51301`) |>
+  select(-`50882`, -`50902`, -`50912`, -`50931`, -`50971`, -`50983`, -`51221`, 
+         -`51301`) |>
   
   # Sort for grading purposes
   arrange(subject_id, stay_id) |>
@@ -178,11 +163,63 @@ print(labevents_tble)
 ### Q1.6 `chartevents` data
 
 Connect to `chartevents` table and retrieve a subset that only contain subjects who appear in `icustays_tble` and the chart events listed in HW3. Only keep the first chart events (by `storetime`) during ICU stay and pivot chart events to become variables/columns. Write all steps in _one_ chain of pipes. Similary to HW3, if a vital has multiple measurements at the first `storetime`, average them.
+**Soulution:**
 ```{r}
-# # TODO
 chartevents_tble <- tbl(con_bq, "chartevents") |>
-  # show_query() |>
-  print(width = Inf)
+
+  # Select relevant columns
+  select(subject_id, itemid, storetime, valuenum) |>
+
+  # Filter for selected vital signs
+  filter(itemid %in% c(220045, 220179, 220180, 223761, 220210)) |>
+
+  # Join ICU stays table to get stay_id, intime, outtime
+  left_join(
+    select(tbl(con_bq, "icustays"), subject_id, stay_id, intime, outtime),
+    by = "subject_id",
+    copy = TRUE
+  ) |>
+
+  # Filter data within ICU stay (storetime between intime and outtime)
+  filter(storetime >= intime & storetime <= outtime) |>
+
+  # Group by subject_id, stay_id, itemid, storetime to apply the mean
+  group_by(subject_id, stay_id, itemid, storetime) |>
+  
+  # Compute the average vital measurement per storetime
+  mutate(valuenum = mean(valuenum, na.rm = TRUE)) |>
+  ungroup() |>
+
+  # Group again to get the first recorded vital per subject, stay, item
+  group_by(subject_id, stay_id, itemid) |>
+  slice_min(order_by = storetime, n = 1) |>
+  
+  # Remove unneeded columns
+  select(-storetime, -intime) |>
+  
+  ungroup() |>
+
+  # Pivot data wider to reshape by itemid
+  pivot_wider(names_from = itemid, values_from = valuenum) |>
+
+  # Rename columns dynamically inside BigQuery
+  mutate(
+    heart_rate = `220045`,
+    systolic_non_invasive_blood_pressure = `220179`,
+    diastolic_non_invasive_blood_pressure = `220180`,
+    temperature_fahrenheit = `223761`,
+    respiratory_rate = `220210`
+  ) |>
+
+  # Remove old numeric columns
+  select(-`220045`, -`220179`, -`220180`, -`223761`, -`220210`) |>
+
+  # Sort data
+  arrange(subject_id, stay_id)
+
+# Print SQL query translation (without computing results)
+show_query(chartevents_tble) |>
+  print(chartevents_tble)
 ```
 
 ### Q1.7 Put things together
@@ -191,7 +228,14 @@ This step is similar to Q7 of HW3. Using _one_ chain of pipes `|>` to perform fo
 
 ```{r}
 # # TODO
-# mimic_icu_cohort <- 
+mimic_icu_cohort <- icustays_tble %>%
+  left_join(admissions_tble, by = c("subject_id", "hadm_id")) %>%
+  left_join(patients_tble, by = "subject_id") %>%
+  left_join(labevents_tble, by = c("subject_id", "stay_id")) %>%
+  left_join(chartevents_tble, by = c("subject_id", "stay_id")) %>% 
+  mutate(age_intime = year(intime) - anchor_year + anchor_age) %>%
+  filter(age_intime >= 18) %>%
+print(mimic_icu_cohort)
 ```
 
 ### Q1.8 Preprocessing
