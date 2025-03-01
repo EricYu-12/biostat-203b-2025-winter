@@ -33,6 +33,7 @@ library(tidyverse)
 library(tidyr)
 library(dplyr)
 library(readr)
+library(forcats)
 ```
 
 ## Q1. Compile the ICU cohort in HW3 from the Google BigQuery database 
@@ -168,7 +169,7 @@ Connect to `chartevents` table and retrieve a subset that only contain subjects 
 chartevents_tble <- tbl(con_bq, "chartevents") |>
 
   # Select relevant columns
-  select(subject_id, itemid, storetime, valuenum) |>
+  select(subject_id, stay_id, itemid, storetime, valuenum) |>
 
   # Filter for selected vital signs
   filter(itemid %in% c(220045, 220179, 220180, 223761, 220210)) |>
@@ -176,7 +177,7 @@ chartevents_tble <- tbl(con_bq, "chartevents") |>
   # Join ICU stays table to get stay_id, intime, outtime
   left_join(
     select(tbl(con_bq, "icustays"), subject_id, stay_id, intime, outtime),
-    by = "subject_id",
+    by = c("subject_id", "stay_id"),
     copy = TRUE
   ) |>
 
@@ -227,7 +228,6 @@ show_query(chartevents_tble) |>
 This step is similar to Q7 of HW3. Using _one_ chain of pipes `|>` to perform following data wrangling steps: (i) start with the `icustays_tble`, (ii) merge in admissions and patients tables, (iii) keep adults only (age at ICU intime >= 18), (iv) merge in the labevents and chartevents tables, (v) `collect` the tibble, (vi) sort `subject_id`, `hadm_id`, `stay_id` and `print(width = Inf)`.
 
 ```{r}
-# # TODO
 mimic_icu_cohort <- icustays_tble %>%
   left_join(admissions_tble, by = c("subject_id", "hadm_id")) %>%
   left_join(patients_tble, by = "subject_id") %>%
@@ -235,7 +235,8 @@ mimic_icu_cohort <- icustays_tble %>%
   left_join(chartevents_tble, by = c("subject_id", "stay_id")) %>% 
   mutate(age_intime = year(intime) - anchor_year + anchor_age) %>%
   filter(age_intime >= 18) %>%
-print(mimic_icu_cohort)
+  collect() %>%
+print(mimic_icu_cohort, width = Inf)
 ```
 
 ### Q1.8 Preprocessing
@@ -245,6 +246,11 @@ Perform the following preprocessing steps. (i) Lump infrequent levels into "Othe
 Hint: Below is a numerical summary of my tibble after preprocessing:
 
 <iframe width=95% height="500" src="./mimic_icu_cohort_gtsummary.html"></iframe>
+
+**Solution:***
+```{r}
+
+```
 
 ### Q1.9 Save the final tibble
 
