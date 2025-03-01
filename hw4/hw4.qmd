@@ -249,7 +249,49 @@ Hint: Below is a numerical summary of my tibble after preprocessing:
 
 **Solution:***
 ```{r}
+# Inspect unique levels of the 'race' variable
+unique_race_levels <- mimic_icu_cohort %>%
+  pull(race) %>%
+  unique()
 
+print(unique_race_levels)
+
+mimic_icu_cohort <- mimic_icu_cohort %>%
+  mutate(race = toupper(trimws(race)))  # Convert to uppercase and remove spaces
+
+mimic_icu_cohort <- mimic_icu_cohort %>%
+  mutate(
+    race = fct_collapse(race,
+      ASIAN = c("ASIAN", "ASIAN - ASIAN INDIAN", "ASIAN - SOUTH EAST ASIAN", 
+                "ASIAN - CHINESE", "ASIAN - KOREAN"),
+      BLACK = c("BLACK/AFRICAN", "BLACK/AFRICAN AMERICAN", "BLACK/CARIBBEAN ISLAND", 
+                "BLACK/CAPE VERDEAN"),
+      HISPANIC = c("HISPANIC OR LATINO", "HISPANIC/LATINO - DOMINICAN", 
+                   "HISPANIC/LATINO - PUERTO RICAN", "HISPANIC/LATINO - SALVADORAN", 
+                   "HISPANIC/LATINO - CENTRAL AMERICAN", "HISPANIC/LATINO - GUATEMALAN",
+                   "HISPANIC/LATINO - MEXICAN", "HISPANIC/LATINO - HONDURAN",
+                   "HISPANIC/LATINO - COLUMBIAN", "HISPANIC/LATINO - CUBAN"),
+      WHITE = c("WHITE", "WHITE - OTHER EUROPEAN", "WHITE - BRAZILIAN", "WHITE - RUSSIAN", 
+                "WHITE - EASTERN EUROPEAN", "PORTUGUESE"),
+      Other = c("UNKNOWN", "OTHER", "UNABLE TO OBTAIN", "PATIENT DECLINED TO ANSWER",
+                "AMERICAN INDIAN/ALASKA NATIVE", "NATIVE HAWAIIAN OR OTHER PACIFIC ISLANDER",
+                "SOUTH AMERICAN", "MULTIPLE RACE/ETHNICITY")
+    )
+  ) %>%
+  
+  # Lump infrequent levels for specified categorical variables
+  mutate(across(c(first_careunit, last_careunit, admission_type, admission_location, discharge_location),
+                ~ fct_lump_n(.x, n = 5, other_level = "Other"))) %>%
+  
+  # Create los_long variable
+  mutate(los_long = los >= 2)
+
+# Generate summary table stratified by 'los_long'
+summary_table <- mimic_icu_cohort %>%
+  select(first_careunit, last_careunit, los, admission_type, admission_location, discharge_location, insurance, language, marital_status, race, hospital_expire_flag, gender, dod, Chloride, Creatinine, Sodium, Potassium, Glucose, Hematocrit, White_Blood_Cells, Bicarbonate, systolic_non_invasive_blood_pressure, diastolic_non_invasive_blood_pressure, respiratory_rate, temperature_fahrenheit, heart_rate, age_intime, los_long) %>%
+  tbl_summary(by = los_long)
+
+print(summary_table)
 ```
 
 ### Q1.9 Save the final tibble
