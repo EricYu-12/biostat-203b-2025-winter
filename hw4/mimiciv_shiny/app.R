@@ -7,7 +7,8 @@ variable_groups <- list(
                      "marital_status"),
   "Lab Measurements" = c("Creatinine", "Sodium", "Potassium", "Glucose", 
                          "Hematocrit", "White_Blood_Cells", "Bicarbonate"),
-  "Vitals" = c("heart_rate", "systolic_non_invasive_blood_pressure", "diastolic_non_invasive_blood_pressure", "respiratory_rate", 
+  "Vitals" = c("heart_rate", "systolic_non_invasive_blood_pressure", 
+               "diastolic_non_invasive_blood_pressure", "respiratory_rate", 
                "temperature_fahrenheit")
 )
 
@@ -83,7 +84,7 @@ server <- function(input, output, session) {
     
     if (is.numeric(data_selected)) {
       ggplot(mimic_filtered, aes(x = !!sym(input$var_select))) +
-        geom_histogram(bins = 30, fill = "blue", alpha = 0.7) +
+        geom_histogram(bins = 30, fill = "skyblue", alpha = 0.7) +
         labs(title = paste("Distribution of", input$var_select),
              x = input$var_select, y = "Count") +
         theme_minimal()
@@ -103,17 +104,21 @@ server <- function(input, output, session) {
     req(input$var_select)
     
     if (is.numeric(mimic_icu_cohort[[input$var_select]])) {
-      # Convert summary output into a data frame
-      summary_df <- 
-        as.data.frame(t(summary(mimic_icu_cohort[[input$var_select]])))
+      # Convert summary output into a clean data frame without row names
+      summary_df <- data.frame(
+        Statistic = names(summary(mimic_icu_cohort[[input$var_select]])),
+        Value = as.vector(summary(mimic_icu_cohort[[input$var_select]]))
+      )
     } else {
       # Generate frequency count for categorical variables
       summary_df <- mimic_icu_cohort %>%
         count(!!sym(input$var_select)) %>%
         arrange(desc(n))
+      colnames(summary_df) <- c("Category", "Count")  
     }
     
-    datatable(summary_df, options = list(pageLength = 5, scrollX = TRUE))
+    datatable(summary_df, options = list(pageLength = 10, scrollX = TRUE, 
+                                         searching = FALSE))
   })
   
   # Display Missing Values Summary
