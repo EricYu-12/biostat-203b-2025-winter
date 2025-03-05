@@ -244,7 +244,8 @@ server <- function(input, output, session) {
           
           scale_x_datetime(name = "Calendar Time") +
           scale_y_discrete(name = NULL, limits = c("Procedure", "Lab", "ADT")) +
-          scale_shape_manual(name = "Procedure", values = c(1:n_distinct(patient_procedures$long_title))) + 
+          scale_shape_manual(name = "Procedure", 
+                    values = c(1:n_distinct(patient_procedures$long_title))) + 
           guides(linewidth = "none") +
           theme_bw() +
           labs(title = patient_title, subtitle = patient_subtitle, x = "Time", 
