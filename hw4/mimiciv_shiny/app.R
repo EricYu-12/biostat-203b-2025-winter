@@ -52,7 +52,8 @@ adt_data <- tbl(con_bq, "transfers") %>%
   select(subject_id, intime, outtime, careunit) %>%
   collect() %>%
   mutate(intime = as.POSIXct(intime, format = "%Y-%m-%d %H:%M:%S"),
-         outtime = as.POSIXct(outtime, format = "%Y-%m-%d %H:%M:%S"))
+         outtime = as.POSIXct(outtime, format = "%Y-%m-%d %H:%M:%S"), 
+         segment_thickness = if_else(str_detect(careunit, "Care Unit"), 10, 8))
 saveRDS(adt_data, "adt_data.rds")
 
 ## Process & Save Labevents
@@ -232,17 +233,19 @@ server <- function(input, output, session) {
         ggplot() +
           geom_segment(data = patient_adt,
                        aes(x = intime, xend = outtime, y = "ADT", yend = "ADT", 
-                           color = careunit),
-                       size = 4) +
+                           color = careunit, linewidth = segment_thickness)) +
           geom_point(data = patient_labevents,
                      aes(x = charttime, y = "Lab"),
                      shape = 3, size = 2, color = "black") +
           geom_point(data = patient_procedures,
                      aes(x = chartdate, y = "Procedure", 
-                         shape = sub(",.*", "", long_title)),
-                     size = 3, color = "black") +
+                         shape = sub(",.*", "", long_title)),  
+                     size = 3, color = "black", fill = "black") +
+          
           scale_x_datetime(name = "Calendar Time") +
           scale_y_discrete(name = NULL, limits = c("Procedure", "Lab", "ADT")) +
+          scale_shape_manual(name = "Procedure", values = c(1:n_distinct(patient_procedures$long_title))) + 
+          guides(linewidth = "none") +
           theme_bw() +
           labs(title = patient_title, subtitle = patient_subtitle, x = "Time", 
                y = "")

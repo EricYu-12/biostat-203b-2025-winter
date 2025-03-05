@@ -363,6 +363,7 @@ Although it is not a good practice to add big data files to Git, for grading pur
 Develop a Shiny app for exploring the ICU cohort data created in Q1. The app should reside in the `mimiciv_shiny` folder. The app should contain at least two tabs. One tab provides easy access to the graphical and numerical summaries of variables (demographics, lab measurements, vitals) in the ICU cohort, using the `mimic_icu_cohort.rds` you curated in Q1. The other tab allows user to choose a specific patient in the cohort and display the patient's ADT and ICU stay information as we did in Q1 of HW3, by dynamically retrieving the patient's ADT and ICU stay information from BigQuery database. Again, do **not** ever add the BigQuery token to your Git repository. If you do so, you will lose 50 points.
 
 **Solution:**
+The detailed code for shiny app can be found in the file app.R.
 ```{r}
 # Load ICU cohort data
 mimic_icu_cohort <- readRDS("~/203b-hw/hw4/mimiciv_shiny/mimic_icu_cohort.rds")
@@ -418,7 +419,8 @@ adt_data <- tbl(con_bq, "transfers") %>%
   select(subject_id, intime, outtime, careunit) %>%
   collect() %>%
   mutate(intime = as.POSIXct(intime, format = "%Y-%m-%d %H:%M:%S"),
-         outtime = as.POSIXct(outtime, format = "%Y-%m-%d %H:%M:%S"))
+         outtime = as.POSIXct(outtime, format = "%Y-%m-%d %H:%M:%S"), 
+         segment_thickness = if_else(str_detect(careunit, "Care Unit"), 10, 8))
 saveRDS(adt_data, "adt_data.rds")
 
 ## Process & Save Labevents
@@ -598,17 +600,19 @@ server <- function(input, output, session) {
         ggplot() +
           geom_segment(data = patient_adt,
                        aes(x = intime, xend = outtime, y = "ADT", yend = "ADT", 
-                           color = careunit),
-                       size = 4) +
+                           color = careunit, linewidth = segment_thickness)) +
           geom_point(data = patient_labevents,
                      aes(x = charttime, y = "Lab"),
                      shape = 3, size = 2, color = "black") +
           geom_point(data = patient_procedures,
-                     aes(x = chartdate, y = "Procedure", 
-                         shape = sub(",.*", "", long_title)),
-                     size = 3, color = "black") +
+             aes(x = chartdate, y = "Procedure", 
+                 shape = sub(",.*", "", long_title)),  
+             size = 3, color = "black", fill = "black") +
+        
           scale_x_datetime(name = "Calendar Time") +
           scale_y_discrete(name = NULL, limits = c("Procedure", "Lab", "ADT")) +
+          scale_shape_manual(name = "Procedure", values = c(1:n_distinct(patient_procedures$long_title))) + 
+          guides(linewidth = "none") +
           theme_bw() +
           labs(title = patient_title, subtitle = patient_subtitle, x = "Time", 
                y = "")
