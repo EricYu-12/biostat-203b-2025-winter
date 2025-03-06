@@ -215,7 +215,6 @@ server <- function(input, output, session) {
     icu_data <- readRDS("icu_data.rds")
     
     if (input$plot_type == "ADT") {
-      # Get Patient Data
       patient_demographics <- demographics_data %>%
         filter(subject_id == !!subject_id)
       
@@ -280,7 +279,6 @@ server <- function(input, output, session) {
         left_join(data.frame(itemid = c(220045, 220180, 220179, 223761, 220210),
                              abbreviation = c("HR", "NBPd", "NBPs", 
                                               "Temperature F", "RR")),
-                  
                   by = "itemid") %>%
         mutate(abbreviation = factor(abbreviation, 
                                      levels = c("HR", "NBPd", "NBPs", 

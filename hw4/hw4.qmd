@@ -120,17 +120,11 @@ Connect to the `labevents` table and retrieve a subset that only contain subject
 
 ```{r}
 labevents_tble <- tbl(con_bq, "labevents") |>
-  
-  # Select relevant columns
   select(subject_id, itemid, storetime, valuenum) |>
-  
-  # Join d_labitems table and Filter to include only items of interest
   inner_join(select(tbl(con_bq, "d_labitems") %>%
   filter(itemid %in% c(50912, 50971, 50983, 50902, 
                        50882, 51221,  51301, 50931)) %>%
   mutate(itemid = as.integer(itemid)), itemid), by = "itemid") |>
-  
-  # Join icustays table
   left_join(
     select(tbl(con_bq, "icustays") |>
   arrange(subject_id, hadm_id, stay_id), 
@@ -155,7 +149,7 @@ labevents_tble <- tbl(con_bq, "labevents") |>
   # Pivot wider to reshape data
   pivot_wider(names_from = itemid, values_from = valuenum) |>
   
-  # Rename columns using mutate() instead of rename()
+  # Rename columns
   mutate(
     Bicarbonate = `50882`,
     Chloride = `50902`,
@@ -170,13 +164,9 @@ labevents_tble <- tbl(con_bq, "labevents") |>
   select(-`50882`, -`50902`, -`50912`, -`50931`, -`50971`, -`50983`, -`51221`, 
          -`51301`) |>
   
-  # Sort for grading purposes
   arrange(subject_id, stay_id) |>
 
-# Print SQL translation (without computing results)
-show_query(labevents_tble) |>
-  
-print(labevents_tble)
+show_query(labevents_tble) |> print(labevents_tble)
 ```
 
 ### Q1.6 `chartevents` data
@@ -186,23 +176,14 @@ Connect to `chartevents` table and retrieve a subset that only contain subjects 
 ```{r}
 chartevents_tble <- tbl(con_bq, "chartevents") |>
 
-  # Select relevant columns
   select(subject_id, stay_id, itemid, storetime, valuenum) |>
-
-  # Filter for selected vital signs
   filter(itemid %in% c(220045, 220179, 220180, 223761, 220210)) |>
-
-  # Join ICU stays table to get stay_id, intime, outtime
   left_join(
     select(tbl(con_bq, "icustays"), subject_id, stay_id, intime, outtime),
     by = c("subject_id", "stay_id"),
     copy = TRUE
   ) |>
-
-  # Filter data within ICU stay (storetime between intime and outtime)
   filter(storetime >= intime & storetime <= outtime) |>
-
-  # Group by subject_id, stay_id, itemid, storetime to apply the mean
   group_by(subject_id, stay_id, itemid, storetime) |>
   
   # Compute the average vital measurement per storetime
@@ -217,8 +198,6 @@ chartevents_tble <- tbl(con_bq, "chartevents") |>
   select(-storetime, -intime) |>
   
   ungroup() |>
-
-  # Pivot data wider to reshape by itemid
   pivot_wider(names_from = itemid, values_from = valuenum) |>
 
   # Rename columns dynamically inside BigQuery
@@ -232,13 +211,9 @@ chartevents_tble <- tbl(con_bq, "chartevents") |>
 
   # Remove old numeric columns
   select(-`220045`, -`220179`, -`220180`, -`223761`, -`220210`) |>
-
-  # Sort data
   arrange(subject_id, stay_id)
 
-# Print SQL query translation (without computing results)
-show_query(chartevents_tble) |>
-  print(chartevents_tble)
+show_query(chartevents_tble) |> print(chartevents_tble)
 ```
 
 ### Q1.7 Put things together
@@ -296,6 +271,7 @@ mimic_icu_cohort <- mimic_icu_cohort %>%
                    "HISPANIC/LATINO - GUATEMALAN",
                    "HISPANIC/LATINO - MEXICAN", "HISPANIC/LATINO - HONDURAN",
                    "HISPANIC/LATINO - COLUMBIAN", "HISPANIC/LATINO - CUBAN"),
+      
       WHITE = c("WHITE", "WHITE - OTHER EUROPEAN", "WHITE - BRAZILIAN", 
                 "WHITE - RUSSIAN", "WHITE - EASTERN EUROPEAN", "PORTUGUESE"),
                 
@@ -324,9 +300,7 @@ summary_table <- mimic_icu_cohort %>%
          temperature_fahrenheit, heart_rate, age_intime, los_long) %>%
   tbl_summary(by = los_long)
 
-summary_table %>%
-  as_gt()
-
+summary_table %>% as_gt()
 ```
 
 ### Q1.9 Save the final tibble
