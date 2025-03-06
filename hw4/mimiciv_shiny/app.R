@@ -118,8 +118,8 @@ server <- function(input, output, session) {
   output$slider_ui <- renderUI({
     if (input$var_select %in% c("age_intime", 
                                 variable_groups[["Lab Measurements"]])) {
-      sliderInput("value_range", paste("Select Range for", 
-                                       input$var_select, ":"),
+      sliderInput("value_range", 
+                  paste("Select Range for", input$var_select, ":"),
                   min = min(mimic_icu_cohort[[input$var_select]], na.rm = TRUE),
                   max = max(mimic_icu_cohort[[input$var_select]], na.rm = TRUE),
                   value = c(min(mimic_icu_cohort[[input$var_select]], 
@@ -129,19 +129,34 @@ server <- function(input, output, session) {
     }
   })
   
+  # Reactive data filtered by slider input
+  filtered_data <- reactive({
+    req(input$var_select)  # Ensure input exists
+    
+    if (is.numeric(mimic_icu_cohort[[input$var_select]])) {
+      mimic_icu_cohort %>%
+        filter(!!sym(input$var_select) >= input$value_range[1] & 
+                 !!sym(input$var_select) <= input$value_range[2])
+    } else {
+      mimic_icu_cohort  
+    }
+  })
+  
   # Generate graphical summaries
   output$graph_plot <- renderPlot({
     req(input$var_select)
     
-    if (is.numeric(mimic_icu_cohort[[input$var_select]])) {
-      ggplot(mimic_icu_cohort, aes(x = !!sym(input$var_select))) +
+    data <- filtered_data()
+    
+    if (is.numeric(data[[input$var_select]])) {
+      ggplot(data, aes(x = !!sym(input$var_select))) +
         geom_histogram(bins = 30, fill = "skyblue", alpha = 0.7) +
         labs(title = paste("Distribution of", input$var_select),
              x = input$var_select, y = "Count") +
         theme_minimal()
     } else {
-      ggplot(mimic_icu_cohort, aes(x = !!sym(input$var_select), 
-                                   fill = !!sym(input$var_select))) +
+      ggplot(data, aes(x = !!sym(input$var_select), 
+                       fill = !!sym(input$var_select))) +
         geom_bar() +
         labs(title = paste("Bar Plot of", input$var_select),
              x = input$var_select, y = "Count") +
@@ -150,17 +165,19 @@ server <- function(input, output, session) {
     }
   })
   
-  # Generate numerical summaries as a DataTable
+  # Generate numerical summaries as a Data Table
   output$num_summary <- renderDT({
     req(input$var_select)
     
-    if (is.numeric(mimic_icu_cohort[[input$var_select]])) {
+    data <- filtered_data()
+    
+    if (is.numeric(data[[input$var_select]])) {
       summary_df <- data.frame(
-        Statistic = names(summary(mimic_icu_cohort[[input$var_select]])),
-        Value = as.vector(summary(mimic_icu_cohort[[input$var_select]]))
+        Statistic = names(summary(data[[input$var_select]])),
+        Value = as.vector(summary(data[[input$var_select]]))
       )
     } else {
-      summary_df <- mimic_icu_cohort %>%
+      summary_df <- data %>%
         count(!!sym(input$var_select)) %>%
         arrange(desc(n))
       colnames(summary_df) <- c("Category", "Count")
@@ -174,12 +191,14 @@ server <- function(input, output, session) {
   output$na_summary <- renderPrint({
     req(input$var_select)
     
-    na_count <- sum(is.na(mimic_icu_cohort[[input$var_select]]))
-    total_values <- nrow(mimic_icu_cohort)
+    data <- filtered_data()
+    
+    na_count <- sum(is.na(data[[input$var_select]]))
+    total_values <- nrow(data)
     missing_percentage <- (na_count / total_values) * 100
     
-    paste0("Missing values (NAs): ", na_count, " out of ", total_values,
-           " (", round(missing_percentage, 2), "%)")
+    paste0("Missing values (NAs): ", na_count, " out of ", 
+           total_values, " (", round(missing_percentage, 2), "%)")
   })
   
   observeEvent(input$submit, {
@@ -243,7 +262,8 @@ server <- function(input, output, session) {
                      size = 3, color = "black", fill = "black") +
           
           scale_x_datetime(name = "Calendar Time") +
-          scale_y_discrete(name = NULL, limits = c("Procedure", "Lab", "ADT")) +
+          scale_y_discrete(name = NULL, 
+                           limits = c("Procedure", "Lab", "ADT")) +
           scale_shape_manual(name = "Procedure", 
                     values = c(1:n_distinct(patient_procedures$long_title))) + 
           guides(linewidth = "none") +
