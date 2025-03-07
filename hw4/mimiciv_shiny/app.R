@@ -12,58 +12,6 @@ variable_groups <- list(
                "temperature_fahrenheit")
 )
 
-# Connect to BigQuery
-satoken <- "biostat-203b-2025-winter-4e58ec6e5579.json"
-bq_auth(path = satoken)
-
-con_bq <- dbConnect(
-  bigrquery::bigquery(),
-  project = "biostat-203b-2025-winter",
-  dataset = "mimiciv_3_1",
-  billing = "biostat-203b-2025-winter"
-)
-
-## Process & Save Patient Demographics 
-demographics_data <- tbl(con_bq, "patients") %>%
-  select(subject_id, gender, anchor_age) %>%
-  left_join(
-    tbl(con_bq, "admissions") %>% select(subject_id, race),
-    by = "subject_id"
-  ) %>%
-  distinct(subject_id, .keep_all = TRUE) %>%  # Ensure one row per patient
-  collect()
-saveRDS(demographics_data, "demographics_data.rds")
-
-## Process & Save Top 3 Diagnoses 
-diagnoses_data <- tbl(con_bq, "diagnoses_icd") %>%
-  left_join(tbl(con_bq, "d_icd_diagnoses"), by = c("icd_code", 
-                                                   "icd_version")) %>%
-  collect() %>%  # Collect everything first before filtering
-  group_by(subject_id, long_title) %>%
-  summarise(freq = n(), .groups = "drop") %>%  # Count occurrences
-  arrange(desc(freq)) %>%  
-  group_by(subject_id) %>%
-  slice(1:3)  # Take the top 3 diagnoses per subject
-
-saveRDS(diagnoses_data, "diagnoses_data.rds")
-
-## Process & Save ADT Data
-adt_data <- tbl(con_bq, "transfers") %>%
-  select(subject_id, intime, outtime, careunit) %>%
-  collect() %>%
-  mutate(intime = as.POSIXct(intime, format = "%Y-%m-%d %H:%M:%S"),
-         outtime = as.POSIXct(outtime, format = "%Y-%m-%d %H:%M:%S"), 
-         segment_thickness = if_else(str_detect(careunit, "Care Unit"), 10, 8))
-saveRDS(adt_data, "adt_data.rds")
-
-## Process & Save Labevents
-labevents_data <- tbl(con_bq, "labevents") %>%
-  select(subject_id, charttime) %>%
-  distinct() %>%
-  collect() %>%
-  mutate(charttime = as.POSIXct(charttime, format = "%Y-%m-%d %H:%M:%S"))
-saveRDS(labevents_data, "labevents_data.rds")
-
 # Define UI
 ui <- fluidPage(
   titlePanel("ICU Cohort Data"),
@@ -107,12 +55,6 @@ ui <- fluidPage(
 
 # Define Server
 server <- function(input, output, session) {
-  
-  observeEvent(input$var_group, {
-    updateSelectInput(session, "var_select",
-                      choices = variable_groups[[input$var_group]],
-                      selected = variable_groups[[input$var_group]][1])
-  })
   
   # Render slider input for `age_intime` and lab measurements
   output$slider_ui <- renderUI({
@@ -205,54 +147,84 @@ server <- function(input, output, session) {
     req(input$subject_id)
     subject_id <- as.numeric(input$subject_id)
     
-    output$error_message <- renderText({ "" })  # Clear error message
+    output$error_message <- renderText({ "" })  
     
-    # Load Pre-Processed Data
-    demographics_data <- readRDS("demographics_data.rds")
-    diagnoses_data <- readRDS("diagnoses_data.rds")
-    adt_data <- readRDS("adt_data.rds")
-    labevents_data <- readRDS("labevents_data.rds")
-    icu_data <- readRDS("icu_data.rds")
+    # Connect to BigQuery
+  satoken <- "biostat-203b-2025-winter-4e58ec6e5579.json"
+  bq_auth(path = satoken)
+  
+  con_bq <- dbConnect(
+    bigrquery::bigquery(),
+    project = "biostat-203b-2025-winter",
+    dataset = "mimiciv_3_1",
+    billing = "biostat-203b-2025-winter"
+  )
+    
+    # Load Data from BigQuery dynamically
+    demographics_data <- tbl(con_bq, "patients") %>%
+      filter(subject_id == !!subject_id) %>%
+      select(subject_id, gender, anchor_age) %>%
+      left_join(tbl(con_bq, "admissions") %>%
+                  filter(subject_id == !!subject_id) %>%
+                  select(subject_id, race), by = "subject_id") %>%
+      distinct(subject_id, .keep_all = TRUE) %>%
+      collect()
+    
+    diagnoses_data <- tbl(con_bq, "diagnoses_icd") %>%
+      filter(subject_id == !!subject_id) %>%
+      left_join(tbl(con_bq, "d_icd_diagnoses"), by = c("icd_code", 
+                                                       "icd_version")) %>%
+      collect() %>%  # Collect everything first before filtering
+      group_by(subject_id, long_title) %>%
+      summarise(freq = n(), .groups = "drop") %>%  # Count occurrences
+      arrange(desc(freq)) %>%  
+      group_by(subject_id) %>%
+      slice(1:3) %>% 
+      pull(long_title)
+    
+    adt_data <- tbl(con_bq, "transfers") %>%
+      filter(subject_id == !!subject_id) %>%
+      select(subject_id, intime, outtime, careunit) %>%
+      collect() %>%
+      mutate(intime = as.POSIXct(intime, format = "%m/%d/%Y %H:%M", tz = "UTC"),
+             outtime = as.POSIXct(outtime, format = "%m/%d/%Y %H:%M", 
+                                  tz = "UTC"), 
+             segment_thickness = if_else(str_detect(careunit, "Care Unit"), 
+                                         10, 8))
+    
+    labevents_data <- tbl(con_bq, "labevents") %>%
+      filter(subject_id == !!subject_id) %>%
+      select(subject_id, charttime) %>%
+      distinct() %>%
+      collect() %>%
+      mutate(charttime = as.POSIXct(charttime, format = "%Y-%m-%d %H:%M:%S"))
+    
+    patient_procedures <- tbl(con_bq, "procedures_icd") %>%
+      filter(subject_id == !!subject_id) %>%
+      left_join(tbl(con_bq, "d_icd_procedures"), 
+                by = c("icd_code" = "icd_code", 
+                       "icd_version" = "icd_version")) %>%
+      collect() %>%
+      mutate(chartdate = as.POSIXct(chartdate, format = "%Y-%m-%d"))
     
     if (input$plot_type == "ADT") {
-      patient_demographics <- demographics_data %>%
-        filter(subject_id == !!subject_id)
-      
-      patient_diagnoses <- diagnoses_data %>%
-        filter(subject_id == !!subject_id) %>%
-        pull(long_title)
-      
-      patient_adt <- adt_data %>%
-        filter(subject_id == !!subject_id)
-      
-      patient_labevents <- labevents_data %>%
-        filter(subject_id == !!subject_id)
-      
-      patient_procedures <- tbl(con_bq, "procedures_icd") %>%
-        filter(subject_id == !!subject_id) %>%
-        left_join(tbl(con_bq, "d_icd_procedures"), 
-                  by = c("icd_code" = "icd_code", 
-                         "icd_version" = "icd_version")) %>%
-        collect() %>%
-        mutate(chartdate = as.POSIXct(chartdate, format = "%Y-%m-%d"))
-      
       # Construct Demographic Title & Diagnoses Subtitle
       patient_title <- paste("Patient", 
-                             patient_demographics$subject_id[1], ", ",
-                             patient_demographics$gender[1], ", ",
-                             patient_demographics$anchor_age[1], "years old, ",
-                             patient_demographics$race[1])
+                             demographics_data$subject_id[1], ", ",
+                             demographics_data$gender[1], ", ",
+                             demographics_data$anchor_age[1], "years old, ",
+                             demographics_data$race[1])
       
-      patient_subtitle <- paste(patient_diagnoses[1], patient_diagnoses[2], 
-                                patient_diagnoses[3], sep = "
+      patient_subtitle <- paste(diagnoses_data[1], diagnoses_data[2], 
+                                diagnoses_data[3], sep = "
 ")
       
       output$patient_plot <- renderPlot({
         ggplot() +
-          geom_segment(data = patient_adt,
+          geom_segment(data = adt_data,
                        aes(x = intime, xend = outtime, y = "ADT", yend = "ADT", 
                            color = careunit, linewidth = segment_thickness)) +
-          geom_point(data = patient_labevents,
+          geom_point(data = labevents_data,
                      aes(x = charttime, y = "Lab"),
                      shape = 3, size = 2, color = "black") +
           geom_point(data = patient_procedures,
@@ -264,13 +236,15 @@ server <- function(input, output, session) {
           scale_y_discrete(name = NULL, 
                            limits = c("Procedure", "Lab", "ADT")) +
           scale_shape_manual(name = "Procedure", 
-                    values = c(1:n_distinct(patient_procedures$long_title))) + 
+                             values = c(1:n_distinct(patient_procedures$long_title))) + 
           guides(linewidth = "none") +
           theme_bw() +
           labs(title = patient_title, subtitle = patient_subtitle, x = "Time", 
                y = "")
       })
-    } else if (input$plot_type == "ICU") {
+    }  
+    
+    else if (input$plot_type == "ICU") {
       icu_data <- tbl(con_bq, "chartevents") %>%
         filter(subject_id == !!subject_id, itemid %in% c(220045, 220180, 220179, 
                                                          223761, 220210)) %>%
@@ -295,7 +269,7 @@ server <- function(input, output, session) {
           theme_minimal()
       })
     }
-  })
+  })  
 }
 
 shinyApp(ui = ui, server = server)
