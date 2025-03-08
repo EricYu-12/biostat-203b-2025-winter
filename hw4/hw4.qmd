@@ -14,12 +14,6 @@ format:
 ---
 
 Display machine information:
-<<<<<<< HEAD
-```{r}
-sessionInfo()
-```
-Display my machine memory.
-=======
 
 ```{r}
 sessionInfo()
@@ -27,16 +21,12 @@ sessionInfo()
 
 Display my machine memory.
 
->>>>>>> develop
 ```{r}
 memuse::Sys.meminfo()
 ```
 
 Load database libraries and the tidyverse frontend:
-<<<<<<< HEAD
-=======
 
->>>>>>> develop
 ```{r}
 library(bigrquery)
 library(dbplyr)
@@ -44,11 +34,6 @@ library(DBI)
 library(gt)
 library(gtsummary)
 library(tidyverse)
-<<<<<<< HEAD
-```
-
-## Q1. Compile the ICU cohort in HW3 from the Google BigQuery database 
-=======
 library(tidyr)
 library(dplyr)
 library(readr)
@@ -61,30 +46,22 @@ library(arrow)
 ```
 
 ## Q1. Compile the ICU cohort in HW3 from the Google BigQuery database
->>>>>>> develop
 
 Below is an outline of steps. In this homework, we exclusively work with the BigQuery database and should not use any MIMIC data files stored on our local computer. Transform data as much as possible in BigQuery database and `collect()` the tibble **only at the end of Q1.7**.
 
 ### Q1.1 Connect to BigQuery
 
 Authenticate with BigQuery using the service account token. Please place the service account token (shared via BruinLearn) in the working directory (same folder as your qmd file). Do **not** ever add this token to your Git repository. If you do so, you will lose 50 points.
-<<<<<<< HEAD
-=======
 
->>>>>>> develop
 ```{r}
 # path to the service account token 
 satoken <- "biostat-203b-2025-winter-4e58ec6e5579.json"
 # BigQuery authentication using service account
 bq_auth(path = satoken)
 ```
-<<<<<<< HEAD
-Connect to BigQuery database `mimiciv_3_1` in GCP (Google Cloud Platform), using the project billing account `biostat-203b-2025-winter`.
-=======
 
 Connect to BigQuery database `mimiciv_3_1` in GCP (Google Cloud Platform), using the project billing account `biostat-203b-2025-winter`.
 
->>>>>>> develop
 ```{r}
 # connect to the BigQuery database `biostat-203b-2025-mimiciv_3_1`
 con_bq <- dbConnect(
@@ -95,13 +72,9 @@ con_bq <- dbConnect(
 )
 con_bq
 ```
-<<<<<<< HEAD
-List all tables in the `mimiciv_3_1` database.
-=======
 
 List all tables in the `mimiciv_3_1` database.
 
->>>>>>> develop
 ```{r}
 dbListTables(con_bq)
 ```
@@ -109,10 +82,7 @@ dbListTables(con_bq)
 ### Q1.2 `icustays` data
 
 Connect to the `icustays` table.
-<<<<<<< HEAD
-=======
 
->>>>>>> develop
 ```{r}
 # full ICU stays table
 icustays_tble <- tbl(con_bq, "icustays") |>
@@ -124,10 +94,7 @@ icustays_tble <- tbl(con_bq, "icustays") |>
 ### Q1.3 `admissions` data
 
 Connect to the `admissions` table.
-<<<<<<< HEAD
-=======
 
->>>>>>> develop
 ```{r}
 # # TODO
 admissions_tble <- tbl(con_bq, "admissions") |>
@@ -139,29 +106,16 @@ admissions_tble <- tbl(con_bq, "admissions") |>
 ### Q1.4 `patients` data
 
 Connect to the `patients` table.
-<<<<<<< HEAD
-=======
 
->>>>>>> develop
 ```{r}
 # # TODO
 patients_tble <- tbl(con_bq, "patients") |>
   # show_query() |>
-<<<<<<< HEAD
-  print(width = Inf) 
-=======
   print(width = Inf)
->>>>>>> develop
 ```
 
 ### Q1.5 `labevents` data
 
-<<<<<<< HEAD
-Connect to the `labevents` table and retrieve a subset that only contain subjects who appear in `icustays_tble` and the lab items listed in HW3. Only keep the last lab measurements (by `storetime`) before the ICU stay and pivot lab items to become variables/columns. Write all steps in _one_ chain of pipes.
-```{r}
-# # TODO
-# labevents_tble <- 
-=======
 Connect to the `labevents` table and retrieve a subset that only contain subjects who appear in `icustays_tble` and the lab items listed in HW3. Only keep the last lab measurements (by `storetime`) before the ICU stay and pivot lab items to become variables/columns. Write all steps in *one* chain of pipes. **Solution:**
 
 ```{r}
@@ -213,17 +167,10 @@ labevents_tble <- tbl(con_bq, "labevents") |>
   arrange(subject_id, stay_id) |>
 
 show_query(labevents_tble) |> print(labevents_tble)
->>>>>>> develop
 ```
 
 ### Q1.6 `chartevents` data
 
-<<<<<<< HEAD
-Connect to `chartevents` table and retrieve a subset that only contain subjects who appear in `icustays_tble` and the chart events listed in HW3. Only keep the first chart events (by `storetime`) during ICU stay and pivot chart events to become variables/columns. Write all steps in _one_ chain of pipes. Similary to HW3, if a vital has multiple measurements at the first `storetime`, average them.
-```{r}
-# # TODO
-# chartevents_tble <- 
-=======
 Connect to `chartevents` table and retrieve a subset that only contain subjects who appear in `icustays_tble` and the chart events listed in HW3. Only keep the first chart events (by `storetime`) during ICU stay and pivot chart events to become variables/columns. Write all steps in *one* chain of pipes. Similary to HW3, if a vital has multiple measurements at the first `storetime`, average them. **Soulution:**
 
 ```{r}
@@ -267,18 +214,10 @@ chartevents_tble <- tbl(con_bq, "chartevents") |>
   arrange(subject_id, stay_id)
 
 show_query(chartevents_tble) |> print(chartevents_tble)
->>>>>>> develop
 ```
 
 ### Q1.7 Put things together
 
-<<<<<<< HEAD
-This step is similar to Q7 of HW3. Using _one_ chain of pipes `|>` to perform following data wrangling steps: (i) start with the `icustays_tble`, (ii) merge in admissions and patients tables, (iii) keep adults only (age at ICU intime >= 18), (iv) merge in the labevents and chartevents tables, (v) `collect` the tibble, (vi) sort `subject_id`, `hadm_id`, `stay_id` and `print(width = Inf)`.
-
-```{r}
-# # TODO
-# mimic_icu_cohort <- 
-=======
 This step is similar to Q7 of HW3. Using *one* chain of pipes `|>` to perform following data wrangling steps: (i) start with the `icustays_tble`, (ii) merge in admissions and patients tables, (iii) keep adults only (age at ICU intime \>= 18), (iv) merge in the labevents and chartevents tables, (v) `collect` the tibble, (vi) sort `subject_id`, `hadm_id`, `stay_id` and `print(width = Inf)`.
 
 ```{r}
@@ -291,7 +230,6 @@ mimic_icu_cohort <- icustays_tble %>%
   filter(age_intime >= 18) %>%
   collect() %>%
 print(mimic_icu_cohort, width = Inf)
->>>>>>> develop
 ```
 
 ### Q1.8 Preprocessing
@@ -300,13 +238,6 @@ Perform the following preprocessing steps. (i) Lump infrequent levels into "Othe
 
 Hint: Below is a numerical summary of my tibble after preprocessing:
 
-<<<<<<< HEAD
-<iframe width=95% height="500" src="./mimic_icu_cohort_gtsummary.html"></iframe>
-
-### Q1.9 Save the final tibble
-
-Save the final tibble to an R data file `mimic_icu_cohort.rds` in the `mimiciv_shiny` folder.
-=======
 <iframe width="95%" height="500" src="./mimic_icu_cohort_gtsummary.html">
 
 </iframe>
@@ -376,7 +307,6 @@ summary_table %>% as_gt()
 
 **Solution:** Save the final tibble to an R data file `mimic_icu_cohort.rds` in the `mimiciv_shiny` folder.
 
->>>>>>> develop
 ```{r}
 # make a directory mimiciv_shiny
 if (!dir.exists("mimiciv_shiny")) {
@@ -386,35 +316,25 @@ if (!dir.exists("mimiciv_shiny")) {
 mimic_icu_cohort |>
   write_rds("mimiciv_shiny/mimic_icu_cohort.rds", compress = "gz")
 ```
-<<<<<<< HEAD
-Close database connection and clear workspace.
-=======
 
 Done.
 
 Close database connection and clear workspace.
 
->>>>>>> develop
 ```{r}
 if (exists("con_bq")) {
   dbDisconnect(con_bq)
 }
 rm(list = ls())
 ```
-<<<<<<< HEAD
-=======
 
 Done.
 
->>>>>>> develop
 Although it is not a good practice to add big data files to Git, for grading purpose, please add `mimic_icu_cohort.rds` to your Git repository.
 
 ## Q2. Shiny app
 
 Develop a Shiny app for exploring the ICU cohort data created in Q1. The app should reside in the `mimiciv_shiny` folder. The app should contain at least two tabs. One tab provides easy access to the graphical and numerical summaries of variables (demographics, lab measurements, vitals) in the ICU cohort, using the `mimic_icu_cohort.rds` you curated in Q1. The other tab allows user to choose a specific patient in the cohort and display the patient's ADT and ICU stay information as we did in Q1 of HW3, by dynamically retrieving the patient's ADT and ICU stay information from BigQuery database. Again, do **not** ever add the BigQuery token to your Git repository. If you do so, you will lose 50 points.
-<<<<<<< HEAD
-=======
 
 **Solution:**
 The detailed code for shiny app can be found in the file app.R.
->>>>>>> develop
