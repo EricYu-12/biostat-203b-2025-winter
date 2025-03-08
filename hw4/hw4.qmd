@@ -283,7 +283,8 @@ mimic_icu_cohort <- mimic_icu_cohort %>%
   ) %>%
   
   # Lump infrequent levels for specified categorical variables
-  mutate(across(c(first_careunit, last_careunit, admission_type, admission_location, discharge_location),
+  mutate(across(c(first_careunit, last_careunit, admission_type, 
+                  admission_location, discharge_location),
                 ~ fct_lump_n(.x, n = 5, other_level = "Other"))) %>%
   
   # Create los_long variable
