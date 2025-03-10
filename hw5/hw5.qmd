@@ -17,23 +17,107 @@ format:
 
 Using the ICU cohort `mimiciv_icu_cohort.rds` you built in Homework 4, develop at least three machine learning approaches (logistic regression with enet regularization, random forest, boosting, SVM, MLP, etc) plus a model stacking approach for predicting whether a patient's ICU stay will be longer than 2 days. You should use the `los_long` variable as the outcome. You algorithms can use patient demographic information (gender, age at ICU `intime`, marital status, race), ICU admission information (first care unit), the last lab measurements before the ICU stay, and first vital measurements during ICU stay as features. You are welcome to use any feature engineering techniques you think are appropriate; but make sure to not use features that are not available at an ICU stay's `intime`. For instance, `last_careunit` cannot be used in your algorithms. 
 
+```{r}
+library(gtsummary)
+library(tidyverse)
+library(tidymodels)
+library(dplyr)
+library(haven)
+library(recipes)
+library(GGally)
+library(ranger)
+library(xgboost)
+library(stacks)
+library(yardstick)
+library(purrr)
+library(vip)
+```
 1. Data preprocessing and feature engineering.
+
+**Solution:**
+I copied the mimic_icu_cohort.rds file from HW4 to my current working directory of HW5.
+
+Step 1: Check for missing values
+```{r}
+mimic_icu_cohort <- read_rds("mimic_icu_cohort.rds") %>% 
+  select(-last_careunit, -dod, -discharge_location, -hospital_expire_flag, -los)
+
+# Chech for missing values
+colSums(is.na(mimic_icu_cohort))
+```
+Step 2: Take a peek at the data types
+```{r}
+sapply(mimic_icu_cohort, class)
+```
+Step 3: Create histograms for the continuous variables to see their distributions
+```{r}
+# Define a vector with the names of the continuous variables
+cont_vars <- c(
+  "Bicarbonate", "Chloride", "Creatinine", "Glucose", "Potassium", "Sodium",
+  "Hematocrit", "White_Blood_Cells", "heart_rate", 
+  "systolic_non_invasive_blood_pressure", 
+  "diastolic_non_invasive_blood_pressure", "temperature_fahrenheit", 
+  "respiratory_rate", "age_intime"
+)
+
+# Reshape the dataset into long format
+hist_data_alt <- mimic_icu_cohort %>%
+  select(all_of(cont_vars)) %>%
+  pivot_longer(
+    cols = everything(),
+    names_to = "variable",
+    values_to = "value"
+  )
+
+# Plot the density distributions for each variable
+ggplot(hist_data_alt, aes(x = value)) +
+  geom_density(kernel = "cosine", fill = "skyblue", alpha = 0.5, na.rm = TRUE) +
+  facet_wrap(~ variable, scales = "free") +
+  labs(x = "Value", y = "Density") +
+  theme_minimal() +
+  theme(
+    plot.margin = margin(12, 12, 12, 12, "pt"),   
+    strip.text = element_text(size = 5),
+    axis.text.x = element_text(size = 5),        
+    axis.text.y = element_text(size = 5)
+  )
+```
+It is clear that most of the data distributions are either left or right skewed in different levels.
+
+Step 4: Deal with categorical variables
+```{r}
+mimic_icu_cohort <- mimic_icu_cohort %>%
+  mutate(
+    marital_status = ifelse(
+      is.na(marital_status), "Unknown", marital_status)
+  ) %>%
+  mutate(marital_status = as.factor(marital_status)) %>%
+  mutate(los_long = as.factor(los_long))
+
+mimic_icu_cohort%>%
+  select(-admit_provider_id) %>%
+  tbl_summary()
+```
 
 2. Partition data into 50% training set and 50% test set. Stratify partitioning according to `los_long`. For grading purpose, sort the data by `subject_id`, `hadm_id`, and `stay_id` and use the seed `203` for the initial data split. Below is the sample code.
 ```{r}
 #| eval: false
 set.seed(203)
 
-# sort
-mimiciv_icu_cohort <- mimiciv_icu_cohort |>
-  arrange(subject_id, hadm_id, stay_id)
+# sort the data by subject_id, hadm_id, and stay_id
+mimic_icu_cohort <- mimic_icu_cohort |>
+  arrange(subject_id, hadm_id, stay_id) |>
+  select(-subject_id, -hadm_id, -stay_id)
 
+# partition data into 50% training set and 50% test set
 data_split <- initial_split(
-  mimiciv_icu_cohort, 
+  mimic_icu_cohort, 
   # stratify by los_long
   strata = "los_long", 
   prop = 0.5
   )
+
+data_split
 ```
 
 3. Train and tune the models using the training set.
