@@ -100,6 +100,9 @@ mimic_icu_cohort%>%
 ```
 
 2. Partition data into 50% training set and 50% test set. Stratify partitioning according to `los_long`. For grading purpose, sort the data by `subject_id`, `hadm_id`, and `stay_id` and use the seed `203` for the initial data split. Below is the sample code.
+
+**Solution:**
+Step 1: split the data into training set and test set
 ```{r}
 #| eval: false
 set.seed(203)
@@ -118,6 +121,14 @@ data_split <- initial_split(
   )
 
 data_split
+
+# check the training set
+train_data <- training(data_split)
+dim(train_data)
+
+# check the test set
+test_data <- testing(data_split)
+dim(test_data)
 ```
 
 3. Train and tune the models using the training set.
