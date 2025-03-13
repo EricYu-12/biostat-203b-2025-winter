@@ -31,16 +31,28 @@ library(stacks)
 library(yardstick)
 library(purrr)
 library(vip)
+library(parsnip)
+library(tune)
+library(dials)
+library(purrr)
 ```
 1. Data preprocessing and feature engineering.
 
 **Solution:**
-I copied the mimic_icu_cohort.rds file from HW4 to my current working directory of HW5.
-
+I copied the mimic_icu_cohort.rds file from HW4 to my current working directory of HW5. 
 Step 1: Check for missing values
 ```{r}
 mimic_icu_cohort <- read_rds("mimic_icu_cohort.rds") %>% 
-  select(-last_careunit, -dod, -discharge_location, -hospital_expire_flag, -los)
+  filter(!is.na(los_long)) %>%
+  select(-last_careunit, -dod, -discharge_location, -hospital_expire_flag, -los, 
+         -intime, -outtime_x, -admittime, -dischtime,
+         -deathtime, -edregtime, -edouttime, -outtime_y, -admit_provider_id) %>%
+  mutate(
+    los_long = as.factor(los_long),
+    insurance = as.factor(insurance),
+    marital_status = as.factor(marital_status),
+    language = as.factor(language)
+  )
 
 # Chech for missing values
 colSums(is.na(mimic_icu_cohort))
@@ -53,8 +65,8 @@ Step 3: Create histograms for the continuous variables to see their distribution
 ```{r}
 # Define a vector with the names of the continuous variables
 cont_vars <- c(
-  "Bicarbonate", "Chloride", "Creatinine", "Glucose", "Potassium", "Sodium",
-  "Hematocrit", "White_Blood_Cells", "heart_rate", 
+  "bicarbonate", "chloride", "creatinine", "glucose", "potassium", "sodium",
+  "hematocrit", "white_blood_cells", "heart_rate", 
   "systolic_non_invasive_blood_pressure", 
   "diastolic_non_invasive_blood_pressure", "temperature_fahrenheit", 
   "respiratory_rate", "age_intime"
@@ -82,29 +94,14 @@ ggplot(hist_data_alt, aes(x = value)) +
     axis.text.y = element_text(size = 5)
   )
 ```
-It is clear that most of the data distributions are either left or right skewed in different levels.
-
-Step 4: Deal with categorical variables
-```{r}
-mimic_icu_cohort <- mimic_icu_cohort %>%
-  mutate(
-    marital_status = ifelse(
-      is.na(marital_status), "Unknown", marital_status)
-  ) %>%
-  mutate(marital_status = as.factor(marital_status)) %>%
-  mutate(los_long = as.factor(los_long))
-
-mimic_icu_cohort%>%
-  select(-admit_provider_id) %>%
-  tbl_summary()
-```
+It is clear that most of the data distributions are either left or right skewed in different levels, therefore I will use median instead of mean to impute the data.
 
 2. Partition data into 50% training set and 50% test set. Stratify partitioning according to `los_long`. For grading purpose, sort the data by `subject_id`, `hadm_id`, and `stay_id` and use the seed `203` for the initial data split. Below is the sample code.
 
 **Solution:**
 Step 1: split the data into training set and test set
 ```{r}
-#| eval: false
+#| eval: true
 set.seed(203)
 
 # sort the data by subject_id, hadm_id, and stay_id
@@ -115,7 +112,6 @@ mimic_icu_cohort <- mimic_icu_cohort |>
 # partition data into 50% training set and 50% test set
 data_split <- initial_split(
   mimic_icu_cohort, 
-  # stratify by los_long
   strata = "los_long", 
   prop = 0.5
   )
@@ -126,11 +122,134 @@ data_split
 train_data <- training(data_split)
 dim(train_data)
 
-# check the test set
-test_data <- testing(data_split)
+# check the training and testing set
+test_data <- testing(data_split) 
 dim(test_data)
+```
+Step 2: Preprocess the data
+```{r}
+logit_recipe <- recipe(los_long ~ ., data = train_data) %>%
+  step_impute_median(all_of(c("bicarbonate", "chloride", "creatinine", 
+                              "glucose", "potassium", 
+                              "sodium", "hematocrit", "white_blood_cells", 
+                              "heart_rate", 
+                              "systolic_non_invasive_blood_pressure",                   
+                              "diastolic_non_invasive_blood_pressure", 
+                              "temperature_fahrenheit", "respiratory_rate", 
+                              "age_intime"))) %>%
+  step_impute_mode(insurance, marital_status, language) %>%
+  step_dummy(all_nominal_predictors()) %>%
+  step_zv(all_numeric_predictors()) %>%
+  step_normalize(all_numeric_predictors()) %>%
+  print()
 ```
 
 3. Train and tune the models using the training set.
 
+### First approach: Logistic regression with elastic net regularization
+
+Step 1: Define the logistic regression model for classification and set the engine
+```{r}
+logit_model <- logistic_reg(
+  penalty = tune(),
+  mixture = tune()
+) %>%
+  set_engine("glmnet", standardize = FALSE)
+
+print(logit_model)
+```
+Step 2: Define workflow
+```{r} 
+logit_workflow <- workflow() %>%
+  add_recipe(logit_recipe) %>%
+  add_model(logit_model) %>%
+  print()
+```
+Step 3: Tune the grid and do cross-validation folds
+```{r}
+logit_param_grid <- grid_regular(
+  penalty(range = c(-6, 3)), 
+  mixture(),                               
+  levels = c(100, 5)) %>%
+  print()
+
+set.seed(203)
+
+# define the number of folds for cross-validation is 5
+logit_folds <- vfold_cv(train_data, v = 5)
+logit_folds
+```
+Step 4: Fit the corss-validated models and select the best model
+```{r}
+suppressMessages(suppressWarnings({
+  if (file.exists("logit_fit.rds")) {
+    logit_fit <- read_rds("logit_fit.rds")
+    logit_fit
+    
+  } else {
+    (logit_fit <- logit_workflow |>
+      tune_grid(
+        resamples = logit_folds,
+        grid = logit_param_grid,
+        metrics = metric_set(roc_auc, accuracy),
+        
+        # prepare for later stacking
+        control = control_stack_grid()
+      )) |>
+    system.time()
+    
+    logit_fit |>
+      write_rds("logit_fit.rds")
+    
+    logit_fit
+  }
+}))
+```
+
+Step 5: Visualize CV result
+```{r}
+logit_fit |>
+  # aggregate metrics from 5-fold cross-validation
+  collect_metrics() |>
+  print(width = Inf) |>
+  filter(.metric == "roc_auc") |>
+  ggplot(mapping = aes(x = penalty, y = mean, 
+                       color = factor(mixture))) +
+  geom_point() +
+  labs(x = "Penalty", y = "CV AUC") +
+  scale_x_log10()
+```
+Step 6: Show the top 5 models
+```{r}
+logit_fit %>%
+  show_best(metric = "roc_auc")
+```
+Step 7: Select the best model
+```{r}
+best_logit <- logit_fit |>
+  select_best(metric = "roc_auc")
+best_logit
+```
+Step 8: Finalize model
+```{r}
+# Final workflow
+final_workflow <- logit_workflow %>%
+  finalize_workflow(best_logit)
+final_workflow
+
+# Fit the whole traning set, then predict the test cases
+final_fit <- final_workflow %>%
+  last_fit(data_split)
+final_fit
+
+# Test metrics
+final_fit %>% 
+  collect_metrics()
+```
+
+Second Approach: Random Forest
+
+
 4. Compare model classification performance on the test set. Report both the area under ROC curve and accuracy for each machine learning algorithm and the model stacking. Interpret the results. What are the most important features in predicting long ICU stays? How do the models compare in terms of performance and interpretability?
+
+
