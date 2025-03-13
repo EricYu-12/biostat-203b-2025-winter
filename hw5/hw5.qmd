@@ -128,7 +128,7 @@ dim(test_data)
 ```
 Step 2: Preprocess the data
 ```{r}
-logit_recipe <- recipe(los_long ~ ., data = train_data) %>%
+recipe <- recipe(los_long ~ ., data = train_data) %>%
   step_impute_median(all_of(c("bicarbonate", "chloride", "creatinine", 
                               "glucose", "potassium", 
                               "sodium", "hematocrit", "white_blood_cells", 
@@ -147,6 +147,11 @@ logit_recipe <- recipe(los_long ~ ., data = train_data) %>%
 3. Train and tune the models using the training set.
 
 ### First approach: Logistic regression with elastic net regularization
+
+Step 1: Define recipe
+```{r}
+logit_recipe <- recipe
+```
 
 Step 1: Define the logistic regression model for classification and set the engine
 ```{r}
@@ -246,9 +251,132 @@ final_fit
 final_fit %>% 
   collect_metrics()
 ```
+Step 9: Plot the variable importance
+```{r}
+final_fit %>%
+  extract_fit_parsnip() %>%
+  vip::vip() %>%
+  print()
+```
 
-Second Approach: Random Forest
+### Second Approach: Random Forest
+Step 1: Define recipe
+```{r}
+# define the recipe
+rf_recipe <- recipe
+```
+Step 2: Define Random Forest Model
+```{r}
+rf_model <- rand_forest(
+  mode = "classification",
+  mtry = tune(),
+  trees = tune()
+) %>%
+  set_engine("ranger", importance = "impurity")
+rf_model
+```
+Step 3: Define workflow
+```{r}
+rf_workflow <- workflow() %>%
+  add_recipe(rf_recipe) %>%
+  add_model(rf_model) %>%
+  print()
+```
+Step 4: Tuning grid
+```{r}
+rf_param_grid <- grid_regular(
+  trees(range = c(100L, 500L)), 
+  mtry(range = c(1L, 5L)),
+  levels = c(5, 5)
+  )
 
+rf_param_grid
+```
+Step 5: Cross-validation
+```{r}
+# Set cross-validation partitions
+set.seed(203)
+
+rf_folds <- vfold_cv(train_data, v = 5)
+rf_folds
+
+# Fit cross-validation
+if (file.exists("rf_fit.rds")) {
+  rf_fit <- read_rds("rf_fit.rds")
+  rf_fit
+  
+} else {
+  (rf_fit <- rf_workflow %>%
+    tune_grid(
+      resamples = rf_folds,
+      grid = rf_param_grid,
+      metrics = metric_set(roc_auc, accuracy),
+      control = control_stack_grid()
+    )) %>%
+  system.time()
+
+  rf_fit %>%
+    write_rds("rf_fit.rds")
+  
+  rf_fit
+}
+```
+Step 6: Visualize CV results
+```{r}
+rf_fit |>
+  collect_metrics() %>%
+  print(width = Inf) %>%
+  filter(.metric == "roc_auc") %>%
+  ggplot(mapping = aes(x = trees, y = mean, 
+                       color = factor(mtry))) +
+  geom_point() +
+  labs(x = "Num. of Trees", y = "CV AUC")
+```
+Step 7: Show the top 5 models
+```{r}
+rf_fit |>
+  show_best(metric = "roc_auc")
+```
+Step 8: Select the best model
+```{r}
+best_rf <- rf_fit |>
+  select_best(metric = "roc_auc")
+best_rf
+```
+Step 9: Finalize the model
+```{r}
+# Final workflow
+rf_final_workflow <- rf_workflow %>%
+  finalize_workflow(best_rf)
+rf_final_workflow
+
+# Fit the whole training set, then predict the test cases
+if (file.exists("rf_final_fit.rds")) {
+  rf_final_fit <- read_rds("rf_final_fit.rds")
+  rf_final_fit
+  
+} else {
+  
+  # fit the final model on the whole training set
+  rf_final_fit <- rf_final_workflow %>%
+    last_fit(data_split)
+  
+  rf_final_fit %>%
+    write_rds("rf_final_fit.rds")
+  rf_final_fit
+}
+
+# Test metrics
+rf_final_fit %>% 
+  collect_metrics()
+```
+Step 10: Plot the variable importance
+```{r}
+rf_final_fit |>
+  extract_fit_engine() |>
+  vip::vip() |>
+  print()
+```
 
 4. Compare model classification performance on the test set. Report both the area under ROC curve and accuracy for each machine learning algorithm and the model stacking. Interpret the results. What are the most important features in predicting long ICU stays? How do the models compare in terms of performance and interpretability?
 
