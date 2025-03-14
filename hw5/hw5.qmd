@@ -378,6 +378,125 @@ rf_final_fit |>
   print()
 ```
 
+### Third approach: Boosting (XGBoost)
+Step 1: Define recipe
+```{r}
+xgb_recipe <- recipe
+```
+Step 2: Define boosting model
+```{r}
+xgb_model <- boost_tree(
+  mode = "classification",
+  trees = 1000,
+  tree_depth = tune(),
+  learn_rate = tune()
+) %>%
+  set_engine("xgboost")
+
+xgb_model
+```
+Step 3: Define workflow
+```{r}
+xgb_workflow <- workflow() %>%
+  add_recipe(xgb_recipe) %>%
+  add_model(xgb_model) 
+xgb_workflow
+```
+Step 4: Tuning grid
+```{r}
+xgb_param_grid <- grid_regular(
+  tree_depth(range = c(1L, 3L)),
+  learn_rate(range = c(-5, 2), trans = log10_trans()),
+  levels = c(3, 10)
+  )
+xgb_param_grid
+```
+Step 5: Cross-validation
+```{r}
+# Set cross-validation partitions
+set.seed(203)
+
+xgb_folds <- vfold_cv(train_data, v = 5)
+xgb_folds
+
+# Fit cross-validation
+if (file.exists("xgb_fit.rds")) {
+  xgb_fit <- read_rds("xgb_fit.rds")
+  xgb_fit
+  
+} else {
+  (xgb_fit <- xgb_workflow %>%
+    tune_grid(
+      resamples = xgb_folds,
+      grid = xgb_param_grid,
+      metrics = metric_set(roc_auc, accuracy),
+      control = control_stack_grid()
+      )) %>%
+    system.time()
+  
+  xgb_fit %>%
+    write_rds("xgb_fit.rds")
+  
+  xgb_fit
+}
+```
+Step 6: Visualize CV results
+```{r}
+xgb_fit |>
+  collect_metrics() |>
+  print(width = Inf) |>
+  filter(.metric == "roc_auc") |>
+  ggplot(mapping = aes(x = learn_rate, y = mean, 
+                       color = factor(tree_depth))) +
+  geom_point() +
+  labs(x = "Learning Rate", y = "CV AUC") +
+  scale_x_log10()
+```
+Step 7: Show the best 5 models
+```{r}
+xgb_fit |>
+  show_best(metric = "roc_auc")
+```
+Step 8: Select the best model
+```{r}
+best_xgb <- xgb_fit |>
+  select_best(metric = "roc_auc")
+best_xgb
+```
+Step 9: Finalize the model
+```{r}
+# Final workflow
+xgb_final_workflow <- xgb_workflow %>%
+  finalize_workflow(best_xgb)
+xgb_final_workflow
+
+if (file.exists("xgb_final_fit.rds")) {
+  xgb_final_fit <- read_rds("xgb_final_fit.rds")
+  xgb_final_fit
+  
+} else {
+  
+  # fit the final model on the whole training set
+  xgb_final_fit <- xgb_final_workflow %>%
+    last_fit(data_split)
+  
+  xgb_final_fit %>%
+    write_rds("xgb_final_fit.rds")
+  
+  xgb_final_fit
+}
+
+# Test metrics
+xgb_final_fit |> 
+  collect_metrics()
+```
+Step 10: Plot the variable importance
+```{r}
+xgb_final_fit %>%
+  extract_fit_engine() %>%
+  vip::vip() %>%
+  print()
+```
 4. Compare model classification performance on the test set. Report both the area under ROC curve and accuracy for each machine learning algorithm and the model stacking. Interpret the results. What are the most important features in predicting long ICU stays? How do the models compare in terms of performance and interpretability?
 
 
