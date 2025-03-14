@@ -238,22 +238,22 @@ best_logit
 Step 8: Finalize model
 ```{r}
 # Final workflow
-final_workflow <- logit_workflow %>%
+logit_final_workflow <- logit_workflow %>%
   finalize_workflow(best_logit)
-final_workflow
+logit_final_workflow
 
 # Fit the whole traning set, then predict the test cases
-final_fit <- final_workflow %>%
+logit_final_fit <- logit_final_workflow %>%
   last_fit(data_split)
-final_fit
+logit_final_fit
 
 # Test metrics
-final_fit %>% 
+logit_final_fit %>% 
   collect_metrics()
 ```
 Step 9: Plot the variable importance
 ```{r}
-final_fit %>%
+logit_final_fit %>%
   extract_fit_parsnip() %>%
   vip::vip() %>%
   print()
