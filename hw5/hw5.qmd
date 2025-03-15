@@ -173,7 +173,7 @@ logit_workflow <- workflow() %>%
 Step 3: Tune the grid and do cross-validation folds
 ```{r}
 logit_param_grid <- grid_regular(
-  penalty(range = c(-6, 3)), 
+  penalty(range = c(-4, 1)), 
   mixture(),                               
   levels = c(100, 5)) %>%
   print()
@@ -286,7 +286,7 @@ Step 4: Tuning grid
 ```{r}
 rf_param_grid <- grid_regular(
   trees(range = c(100L, 500L)), 
-  mtry(range = c(1L, 5L)),
+  mtry(range = c(2L, 5L)),
   levels = c(5, 5)
   )
 
@@ -406,8 +406,8 @@ Step 4: Tuning grid
 ```{r}
 xgb_param_grid <- grid_regular(
   tree_depth(range = c(1L, 3L)),
-  learn_rate(range = c(-5, 2), trans = log10_trans()),
-  levels = c(3, 10)
+  learn_rate(range = c(-3, 0), trans = log10_trans()),
+  levels = c(3, 3)
   )
 xgb_param_grid
 ```
@@ -497,6 +497,111 @@ xgb_final_fit %>%
   vip::vip() %>%
   print()
 ```
+
+### Model Stacking
+Step 1: Set up the cross-validation folds to be shared by 3 models using in the stack model 
+```{r}
+set.seed(203)
+folds <- vfold_cv(train_data, v = 3)
+```
+
+Step 2: Base models. Here we use logistic regression with elastic net regularization, Random Forest, and XGBoosting. To shorten the running time, I changed the grid of each model to smaller numbers to ensure the system won't crash.
+```{r}
+# Logistic regression with elastic net regularization
+logit_mod <- 
+  logistic_reg(
+    penalty = tune(), 
+    mixture = tune()
+  ) |> 
+  set_engine("glmnet", standardize = TRUE)
+logit_mod
+
+logit_wf <- workflow() |>
+  add_recipe(logit_recipe) |>
+  add_model(logit_mod)
+logit_wf
+
+logit_stack_grid <- grid_regular(
+  penalty(range = c(-6, 3)), 
+  mixture(),
+  levels = c(5, 5)
+  )
+
+suppressMessages(suppressWarnings({
+  if (file.exists("logit_stack.rds")) {
+    logit_stack <- read_rds("logit_stack.rds")
+    logit_stack
+    
+  } else {
+    (logit_stack <- logit_wf |>
+      tune_grid(
+        resamples = folds,
+        grid = logit_stack_grid,
+        metrics = metric_set(roc_auc, accuracy),
+        control = control_stack_grid()
+      )) |>
+    system.time()
+    
+    logit_stack |>
+      write_rds("logit_stack.rds")
+    
+    logit_stack
+  }
+}))
+```
+```{r}
+# Random forest
+rf_mod <- 
+  rand_forest(
+    mode = "classification",
+    mtry = tune(),
+    trees = tune()
+  ) |>
+  set_engine("ranger")
+rf_mod
+
+rf_wf <- workflow() |>
+  add_recipe(rf_recipe) |>
+  add_model(rf_mod)
+rf_wf
+
+rf_stack_grid <- grid_regular(
+  trees(range = c(200L, 500L)), 
+  mtry(range = c(1L, 5L)),
+  levels = c(5, 2)
+  )
+
+if (file.exists("rf_stack.rds")) {
+  rf_stack <- read_rds("rf_stack.rds")
+  rf_stack
+  
+} else {
+  (rf_stack <- rf_wf %>%
+    tune_grid(
+      resamples = folds,
+      grid = rf_stack_grid,
+      metrics = metric_set(roc_auc, accuracy),
+      control = control_stack_grid()
+    )) %>%
+  system.time()
+
+  rf_stack %>%
+    write_rds("rf_stack.rds")
+  
+  rf_stack
+}
+```
+```{r}
+# XGBoosting
+```
+
+
+Step 3: Build the stacked ensemble
+```{r}
+
+```
+
+
 4. Compare model classification performance on the test set. Report both the area under ROC curve and accuracy for each machine learning algorithm and the model stacking. Interpret the results. What are the most important features in predicting long ICU stays? How do the models compare in terms of performance and interpretability?
 
 
