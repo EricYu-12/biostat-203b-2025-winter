@@ -36,10 +36,10 @@ library(tune)
 library(dials)
 library(purrr)
 ```
-1. Data preprocessing and feature engineering.
+### 1. Data preprocessing and feature engineering.
 
 **Solution:**
-I copied the mimic_icu_cohort.rds file from HW4 to my current working directory of HW5. 
+I put the mimic_icu_cohort.rds file from HW4 to my current working directory of HW5. 
 Step 1: Check for missing values
 ```{r}
 mimic_icu_cohort <- read_rds("mimic_icu_cohort.rds") %>% 
@@ -96,7 +96,7 @@ ggplot(hist_data_alt, aes(x = value)) +
 ```
 It is clear that most of the data distributions are either left or right skewed in different levels, therefore I will use median instead of mean to impute the data.
 
-2. Partition data into 50% training set and 50% test set. Stratify partitioning according to `los_long`. For grading purpose, sort the data by `subject_id`, `hadm_id`, and `stay_id` and use the seed `203` for the initial data split. Below is the sample code.
+### 2. Partition data into 50% training set and 50% test set. Stratify partitioning according to `los_long`. For grading purpose, sort the data by `subject_id`, `hadm_id`, and `stay_id` and use the seed `203` for the initial data split. Below is the sample code.
 
 **Solution:**
 Step 1: split the data into training set and test set
@@ -144,10 +144,9 @@ recipe <- recipe(los_long ~ ., data = train_data) %>%
   print()
 ```
 
-3. Train and tune the models using the training set.
+### 3. Train and tune the models using the training set.
 
-### First approach: Logistic regression with elastic net regularization
-
+#### First approach: Logistic regression with elastic net regularization
 Step 1: Define recipe
 ```{r}
 logit_recipe <- recipe
@@ -255,8 +254,12 @@ logit_final_fit %>%
   vip::vip() %>%
   print()
 ```
+Summary of the logistic regression with elastic net regularization:
+Based on the final logistic regression model, its accuracy is 0.5782775, meaning that the model only has 57.8% rate of correct prediction on the test set. The model also has AUC of 0.60881425, indicating that the model can classify 60.9% of the test set correctly.
 
-### Second Approach: Random Forest
+The 10 most important predictors are shown in the variable importance plot, and the most important predictor is the first care unit. 
+
+#### Second Approach: Random Forest
 Step 1: Define recipe
 ```{r}
 # define the recipe
@@ -370,13 +373,17 @@ rf_final_fit %>%
 ```
 Step 10: Plot the variable importance
 ```{r}
-rf_final_fit |>
-  extract_fit_engine() |>
-  vip::vip() |>
+rf_final_fit %>%
+  extract_fit_engine() %>%
+  vip::vip() %>%
   print()
 ```
+Summary of the random forest model:
+The model has accuracy of 0.6060818, meaning that the model can predict 60.6% of the test dataset correctly. The AUC of the model is 0.6474515, which means that the final random forest model can correctly classify 64.7% of the test dataset. At this point, we can see that the random forest model has better performance in both accuracy and AUC than the logistic model.
 
-### Third approach: Boosting (XGBoost)
+The 10 most important predictors are listed in the variable importance plot. The most important variable is systolic noninvasive blood pressure.
+
+#### Third approach: Boosting (XGBoost)
 Step 1: Define recipe
 ```{r}
 xgb_recipe <- recipe
@@ -495,8 +502,12 @@ xgb_final_fit %>%
   vip::vip() %>%
   print()
 ```
+Summary of the XGBoosting model:
+The model has accuracy of 0.6036677, meaning that the model can predict 60.4% of the test dataset correctly. The AUC of the model is 0.6465419, which means that the final XGBoosting model can correctly classify 64.7% of the test dataset. At this point, we can see that both the random forest model and XGBoosting model have better performance in both accuracy and AUC than the logistic model. The performance of random forest model and XGBoosting model are close to each other, with random forest has slighlty higher accuracy and AUC.
 
-### Model Stacking
+The 10 most important predictors are listed in the variable importance plot. The most important variable in XGBoosting is temperature fahrenheit.
+
+#### Model Stacking
 Step 1: Set up the cross-validation folds to be shared by 3 models using in the stack model 
 ```{r}
 set.seed(203)
@@ -633,8 +644,6 @@ if (file.exists("gb_stack.rds")) {
   gb_stack
 }
 ```
-
-
 Step 3: Build the stacked ensemble
 ```{r}
 if (file.exists("stacks.rds")) {
@@ -688,7 +697,7 @@ collect_parameters(model_st, "gb_stack")
 # Coefficients of Logistic regression model
 collect_parameters(model_st, "logit_stack")
 ```
-### Finalization 
+Step 6: Finalization 
 Apply the model on the test data and output the final classification
 ```{r}
 if (file.exists("final_classification.rds")) {
@@ -751,6 +760,7 @@ if (file.exists("mimic_pred.rds")) {
 mimic_pred  
 ```
 ```{r}
+# Get the mean of the predicted classes for each model
 map(
   colnames(mimic_pred),
   ~mean(mimic_pred$los_long == pull(mimic_pred, .x))
@@ -760,8 +770,70 @@ map(
   pivot_longer(c(everything(), -los_long))
 ```
 
+### 4. Compare model classification performance on the test set. Report both the area under ROC curve and accuracy for each machine learning algorithm and the model stacking. Interpret the results. What are the most important features in predicting long ICU stays? How do the models compare in terms of performance and interpretability?
 
+#### Report the information of accuracy and AUC of each machine learning algorithm and the model stacking
+```{r}
+# Logistic regression with elastic net regularization 
+logit_final_fit %>% 
+  collect_metrics()
 
-4. Compare model classification performance on the test set. Report both the area under ROC curve and accuracy for each machine learning algorithm and the model stacking. Interpret the results. What are the most important features in predicting long ICU stays? How do the models compare in terms of performance and interpretability?
+# Random forest
+rf_final_fit %>% 
+  collect_metrics()
 
+# XGBoosting
+xgb_final_fit %>% 
+  collect_metrics()
+
+# Model stacking
+## Accuracy
+final_classification <- final_classification %>%
+  mutate(.pred_class = as.factor(
+    ifelse(.pred_TRUE > .pred_FALSE, "TRUE", "FALSE")))
+
+yardstick::accuracy(
+  final_classification,
+  truth = los_long,
+  estimate = .pred_class
+  )
+
+## ROC AUC
+yardstick::roc_auc(
+  final_classification,
+  truth = los_long,
+  contains(".pred_FALSE")
+  )
+```
+It can be seen that the accuracy and AUC of the logistic regression model are 0.5782775 and 0.6081425 respectively, the accuracy and AUC of the random forest model are 0.6060818 and 0.6474515 respectively, and the accuracy and AUC of the XGBoosting model are 0.6036677 and 0.6465419 respectively. Based on the above results, we can see that for individual models, random forest has the highest accuracy and AUC and thus it is the best-performing model among the three machine learning algorithms, and it has the greatest weight in the stacked ensemble, followed by the XGBoosting model. In order to speed up the processing and prevent the system from crashing, I selected a smaller fold of cross-validation (3) than the ones for single models (5), and I also reduced the grids. Because of this reason, there are some duplicated candidates that are automatically removed by the system, and the stacked results shows no information on logistic model. But this should not be a problem since the logistic model is the least efficient one among the three models. 
+
+The accuracy and AUC of the final classification of the stacked model are 0.6091947 and 0.6530818 respectively, meaning that the probability of the model ranking a randomly chosen positive observation higher than a randomly chosen negative observation is 0.6530818 and the probability of correct prediction is 0.6091947.
+
+Turning to the coefficients of each model within the stacked ensemble, the random forest model occupied the top 5 values and the XGBoosting model takes the remaining 4 positions. No information about the logistic model is shown because of the reason I mentioned earlier.
+
+To summarize, the random forest model has the best performance in the prediction, followed by the XGBoosting model, and logitic model being the least efficient one.
+
+#### Report the most important features in predicting long ICU stays
+```{r}
+# Logistic regression with elastic net regularization
+logit_final_fit %>%
+  extract_fit_parsnip() %>%
+  vip::vip() %>%
+  print()
+
+# Random forest
+rf_final_fit %>%
+  extract_fit_engine() %>%
+  vip::vip() %>%
+  print()
+
+# XGBoosting
+xgb_final_fit %>%
+  extract_fit_engine() %>%
+  vip::vip() %>%
+  print()
+```
+As shown in the above plots, the most important feature in predicting long ICU stays for logistic regression model is first careunit. For random forest model, the most important feature is systolic noninvasive blood pressure. If we look close enough, we will find that heart rate also plays a very important role in prediction. In fact, for this model, there are 7 variables (systolic noninvasive blood pressure, heart rate, white blood cells, hematocrit, temperature fahrenheit, diastolic noninvasive blood pressure, and respiratory rate) exit the importance of 750. For XGBoosting model, the most important variable is temperature fahrenheit. 
+#### Summary of performance and interpretability
+In general, random forest model has the best performance, followed by XGBoosting model, and logistic regression model the least efficient. But in terms of intepretability, logistic regression model is the best.
 
